@@ -29,7 +29,7 @@
   .choice-container { display: flex; justify-content: center; flex-wrap: wrap; max-width: 600px; margin: 0 auto; gap: 5px; }
   .mode-title { font-size: 1.8em; font-weight: bold; margin-bottom: 15px; color: #ffaa00; }
   
-  /* メインメニュー用の大きなボタン */
+  /* メメインメニュー用の大きなボタン */
   .menu-btn { font-size: 22px; padding: 20px 40px; margin: 10px; width: 85%; max-width: 320px; }
   
   /* 正解・不正解時のエフェクト用クラス */
@@ -201,14 +201,18 @@ function generateQuestion() {
   };
   
   drawStaff();
-  
+  createChoiceButtons();
+}
+
+// 選択肢ボタンの生成部分を共通関数化
+function createChoiceButtons() {
   const div = document.getElementById("choices");
   div.innerHTML = "";
   ["ド","レ","ミ","ファ","ソ","ラ","シ"].forEach(name => {
     const btn = document.createElement("button");
     btn.innerText = name;
-    btn.style.padding = "20px 30px";  /* ボタンをスマホ用に大きく */
-    btn.style.fontSize = "22px";      /* 文字も大きく */
+    btn.style.padding = "20px 30px";  
+    btn.style.fontSize = "22px";      
     btn.onclick = () => checkAnswer(name);
     div.appendChild(btn);
   });
@@ -245,9 +249,9 @@ function drawStaff() {
 
 function checkAnswer(name) {
   if (name === correctNote.name) {
-    // 正解エフェクト
+    // 【正解時】緑フラッシュとその音階の音を再生
     triggerFlash('correct-flash');
-    playCorrectSound();
+    playTone(correctNote.freq);
     
     if (gameMode === 'exam') {
       score += 10; 
@@ -261,27 +265,30 @@ function checkAnswer(name) {
       document.getElementById('score-display').innerText = `スコア: ${score}`;
       document.getElementById('combo-display').innerText = `コンボ: ${comboCount}`;
     }
+    
+    // 正解したので次の問題へ進む
+    generateQuestion();
+
   } else {
-    // 不正解エフェクト
+    // 【不正解時】赤フラッシュ、コンボ消滅、警告音（問題は変えない）
     triggerFlash('wrong-flash');
     playWrongSound();
     
     if (gameMode === 'exam') {
       score -= 5; 
       if (score < 0) score = 0; 
-      comboCount = 0; 
+      comboCount = 0; // 不正解でコンボが途切れる
       
       document.getElementById('score-display').innerText = `スコア: ${score}`;
       document.getElementById('combo-display').innerText = `コンボ: ${comboCount}`;
     }
+    // generateQuestion()を呼ばないため、同じ問題が維持されます
   }
-  generateQuestion();
 }
 
 // 画面を一時的に光らせる演出
 function triggerFlash(className) {
   document.body.classList.remove('correct-flash', 'wrong-flash');
-  // 一瞬だけクラスを適用して背景色を変える
   void document.body.offsetWidth; // リフローをトリガーしてアニメーションをリセット
   document.body.classList.add(className);
   setTimeout(() => {
@@ -289,39 +296,26 @@ function triggerFlash(className) {
   }, 150);
 }
 
-// 正解音（ピコーン！と上がる高い2連音）
-function playCorrectSound() {
-  const now = audioCtx.currentTime;
-  
-  // 1音目
-  const osc1 = audioCtx.createOscillator();
-  const gain1 = audioCtx.createGain();
-  osc1.frequency.setValueAtTime(523.25, now); // ド (C5)
-  osc1.connect(gain1); gain1.connect(audioCtx.destination);
-  gain1.gain.setValueAtTime(0.1, now);
-  gain1.gain.exponentialRampToValueAtTime(0.001, now + 0.15);
-  osc1.start(now); osc1.stop(now + 0.15);
-  
-  // 2音目（少し遅れて高い音）
-  const osc2 = audioCtx.createOscillator();
-  const gain2 = audioCtx.createGain();
-  osc2.frequency.setValueAtTime(783.99, now + 0.08); // ソ (G5)
-  osc2.connect(gain2); gain2.connect(audioCtx.destination);
-  gain2.gain.setValueAtTime(0.1, now + 0.08);
-  gain2.gain.exponentialRampToValueAtTime(0.001, now + 0.25);
-  osc2.start(now + 0.08); osc2.stop(now + 0.25);
+// 正解音（その音階の正解音を綺麗に鳴らす）
+function playTone(freq){
+  const osc = audioCtx.createOscillator();
+  const gain = audioCtx.createGain();
+  osc.type = "sine";
+  osc.frequency.value = freq;
+  osc.connect(gain); gain.connect(audioCtx.destination);
+  osc.start();
+  gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.5);
+  osc.stop(audioCtx.currentTime + 0.5);
 }
 
 // 不正解音（ブブーという低い濁った音）
 function playWrongSound() {
   const now = audioCtx.currentTime;
-  
-  // 音を濁らせるために2つの低い周波数を同時に鳴らす
   const osc1 = audioCtx.createOscillator();
   const osc2 = audioCtx.createOscillator();
   const gain = audioCtx.createGain();
   
-  osc1.type = "sawtooth"; // 警告音っぽいノコギリ波
+  osc1.type = "sawtooth"; 
   osc2.type = "sawtooth";
   
   osc1.frequency.setValueAtTime(130.81, now); // 低いド
