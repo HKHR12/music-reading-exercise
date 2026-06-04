@@ -2,23 +2,39 @@
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>譜読み練習サイト - Clef Masters</title>
 <style>
-  body { background:#101018; color:white; text-align:center; font-family:sans-serif; margin:0; padding:20px; }
-  canvas { background:white; border-radius: 8px; margin:10px; box-shadow: 0 0 20px rgba(255,255,255,0.1); }
+  body { 
+    background:#101018; color:white; text-align:center; font-family:sans-serif; margin:0; padding:10px;
+    transition: background-color 0.15s ease; /* 正解・不正解時の背景フラッシュ用 */
+  }
+  canvas { 
+    background:white; border-radius: 8px; margin:10px auto; display: block;
+    box-shadow: 0 0 20px rgba(255,255,255,0.1); 
+    max-width: 100%; height: auto; /* スマホの横幅に自動で収まるように */
+  }
   button { 
-    margin:5px; padding:12px 20px; font-size: 16px; cursor: pointer;
-    background: #4444ff; color: white; border: none; border-radius: 5px;
+    margin:8px; padding:18px 28px; font-size: 20px; font-weight: bold; cursor: pointer;
+    background: #4444ff; color: white; border: none; border-radius: 8px;
     transition: 0.2s;
+    touch-action: manipulation; /* スマホでのタップ時のズーム遅延を防止 */
   }
   button:hover { background: #6666ff; transform: scale(1.05); }
   button:active { transform: scale(0.95); }
   .screen { display: none; }
   .active { display: block; }
-  .panel { margin:15px; padding: 15px; border: 1px solid #333; border-radius: 8px; background: #1a1a24; }
-  .stats-grid { display: flex; justify-content: center; gap: 20px; margin-bottom: 10px; font-weight: bold; font-size: 1.2em; }
-  .choice-container { display: flex; justify-content: center; flex-wrap: wrap; max-width: 600px; margin: 0 auto; }
-  .mode-title { font-size: 1.5em; font-weight: bold; margin-bottom: 10px; color: #ffaa00; }
+  .panel { margin:15px auto; padding: 20px; border: 1px solid #333; border-radius: 12px; background: #1a1a24; max-width: 600px; }
+  .stats-grid { display: flex; justify-content: center; gap: 25px; margin-bottom: 10px; font-weight: bold; font-size: 1.4em; }
+  .choice-container { display: flex; justify-content: center; flex-wrap: wrap; max-width: 600px; margin: 0 auto; gap: 5px; }
+  .mode-title { font-size: 1.8em; font-weight: bold; margin-bottom: 15px; color: #ffaa00; }
+  
+  /* メインメニュー用の大きなボタン */
+  .menu-btn { font-size: 22px; padding: 20px 40px; margin: 10px; width: 85%; max-width: 320px; }
+  
+  /* 正解・不正解時のエフェクト用クラス */
+  body.correct-flash { background-color: #113c11; }
+  body.wrong-flash { background-color: #4c1111; }
 </style>
 </head>
 <body>
@@ -28,19 +44,19 @@
 <div id="screen-home" class="screen active">
   <div class="panel">
     <h2>メインメニュー</h2>
-    <p>練習したい記号とモードを選んでください。</p>
+    <p style="font-size: 1.1em; color: #ccc;">練習したい記号とモードを選んでください。</p>
     
-    <div style="margin-bottom: 20px;">
-      <label style="font-size: 1.1em; font-weight: bold; margin-right: 10px;">音部記号：</label>
-      <button id="btn-clef-treble" onclick="selectClef('treble')" style="background: #ff55bb;">ト音記号</button>
-      <button id="btn-clef-bass" onclick="selectClef('bass')" style="background: #555;">ヘ音記号</button>
+    <div style="margin-bottom: 25px;">
+      <div style="font-size: 1.2em; font-weight: bold; margin-bottom: 10px;">音部記号の選択：</div>
+      <button id="btn-clef-treble" onclick="selectClef('treble')" style="background: #ff55bb; font-size: 20px; padding: 15px 30px;">ト音記号</button>
+      <button id="btn-clef-bass" onclick="selectClef('bass')" style="background: #555; font-size: 20px; padding: 15px 30px;">ヘ音記号</button>
     </div>
 
-    <hr style="border-color: #333; margin: 20px 0;">
+    <hr style="border-color: #333; margin: 25px 0;">
 
-    <div style="display: flex; justify-content: center; gap: 20px;">
-      <button onclick="startGameMode('exam')" style="background: #ff4444; font-size: 1.2em; padding: 15px 30px;">🔥 本番開始 (1分半制限)</button>
-      <button onclick="startGameMode('practice')" style="background: #22cc22; font-size: 1.2em; padding: 15px 30px;">✏️ 練習開始 (制限なし)</button>
+    <div style="display: flex; flex-direction: column; align-items: center;">
+      <button onclick="startGameMode('exam')" class="menu-btn" style="background: #ff4444;">🔥 本番開始 (1分半)</button>
+      <button onclick="startGameMode('practice')" class="menu-btn" style="background: #22cc22;">✏️ 練習開始 (制限なし)</button>
     </div>
   </div>
 </div>
@@ -51,23 +67,24 @@
     <div class="stats-grid">
       <div id="timer-display">残り時間: --</div>
       <div id="score-display">スコア: 0</div>
-      <div id="combo-display">連打: 0</div>
+      <div id="combo-display">コンボ: 0</div>
     </div>
   </div>
 
   <canvas id="staff" width="600" height="220"></canvas>
   
   <div class="panel">
+    <div style="font-size: 1.1em; color: #aaa; margin-bottom: 10px;">正しい音名を選んでね！</div>
     <div class="choice-container" id="choices"></div>
   </div>
   
-  <button onclick="endGame()" style="background:#555;">メニューに戻る</button>
+  <button onclick="endGame()" style="background:#555; font-size: 18px; padding: 12px 24px; margin-top: 15px;">メニューに戻る</button>
 </div>
 
 <script>
 let audioCtx = null;
-let currentClef = 'treble'; // 'treble' or 'bass'
-let gameMode = 'exam';      // 'exam' or 'practice'
+let currentClef = 'treble'; 
+let gameMode = 'exam';      
 let gameActive = false;
 let correctNote = null;
 
@@ -75,7 +92,7 @@ let correctNote = null;
 let score = 0;
 let timeLeft = 0;
 let lastTimestamp = 0;
-let comboCount = 0; // 連続正解数をカウントする変数
+let comboCount = 0; 
 
 const NOTES_DATA = [
   {name:"ド", freq:261.63, trebleY:160, bassY:100},
@@ -97,7 +114,6 @@ function showScreen(screenId) {
   gameActive = (screenId === 'screen-game');
 }
 
-// 記号の選択切り替え
 function selectClef(clef) {
   currentClef = clef;
   const trebleBtn = document.getElementById('btn-clef-treble');
@@ -112,7 +128,6 @@ function selectClef(clef) {
   }
 }
 
-// ゲームモード開始
 function startGameMode(mode) {
   initAudio();
   gameMode = mode;
@@ -127,7 +142,7 @@ function startGameMode(mode) {
     modeText.style.color = "#ff4444";
     score = 0;
     comboCount = 0;
-    timeLeft = 90.0; // 制限時間を1分半（90秒）に設定
+    timeLeft = 90.0; 
     timerDisp.innerText = `残り時間: ${timeLeft.toFixed(1)}s`;
     scoreDisp.innerText = `スコア: ${score}`;
     comboDisp.innerText = `コンボ: ${comboCount}`;
@@ -150,7 +165,6 @@ function startGameMode(mode) {
   }
 }
 
-// 本番モード用メインループ
 function gameLoop(timestamp) {
   if (!gameActive || gameMode !== 'exam') return;
   
@@ -162,8 +176,6 @@ function gameLoop(timestamp) {
   if (timeLeft <= 0) {
     timeLeft = 0;
     document.getElementById('timer-display').innerText = `残り時間: 0.0s`;
-    
-    // 時間切れ時のアラート表示
     alert(`終了！スコアは ${score} です！`);
     endGame();
     return;
@@ -178,11 +190,8 @@ function endGame() {
   showScreen('screen-home');
 }
 
-// 問題生成
 function generateQuestion() {
   const base = NOTES_DATA[Math.floor(Math.random() * NOTES_DATA.length)];
-  
-  // オクターブのランダム要素（-1:低い、0:標準、1:高い）
   let oct = Math.floor(Math.random() * 3) - 1; 
 
   correctNote = {
@@ -198,12 +207,13 @@ function generateQuestion() {
   ["ド","レ","ミ","ファ","ソ","ラ","シ"].forEach(name => {
     const btn = document.createElement("button");
     btn.innerText = name;
+    btn.style.padding = "20px 30px";  /* ボタンをスマホ用に大きく */
+    btn.style.fontSize = "22px";      /* 文字も大きく */
     btn.onclick = () => checkAnswer(name);
     div.appendChild(btn);
   });
 }
 
-// 五線譜の描画
 function drawStaff() {
   const canvas = document.getElementById("staff");
   const ctx = canvas.getContext("2d");
@@ -211,23 +221,19 @@ function drawStaff() {
   ctx.strokeStyle="#333";
   ctx.lineWidth = 2;
   
-  // 五線を描画
   for(let i=0; i<5; i++){
     ctx.beginPath(); ctx.moveTo(50, 60+i*20); ctx.lineTo(550, 60+i*20); ctx.stroke();
   }
   
-  // 音部記号を描画
   ctx.font="80px serif";
   ctx.fillStyle="black";
   ctx.fillText(currentClef === 'treble' ? "𝄞" : "𝄢", 60, currentClef === 'treble' ? 135 : 115);
   
-  // 音符（○）を描画
   ctx.beginPath();
   ctx.fillStyle = "black";
   ctx.ellipse(300, correctNote.y, 10, 7, 0, 0, Math.PI*2);
   ctx.fill();
 
-  // 加線（上・下に追加される線）の描画
   ctx.strokeStyle = "black";
   for(let ly = 160; ly <= correctNote.y; ly += 20) {
     ctx.beginPath(); ctx.moveTo(280, ly); ctx.lineTo(320, ly); ctx.stroke();
@@ -237,47 +243,98 @@ function drawStaff() {
   }
 }
 
-// 回答判定
 function checkAnswer(name) {
   if (name === correctNote.name) {
-    playTone(correctNote.freq);
+    // 正解エフェクト
+    triggerFlash('correct-flash');
+    playCorrectSound();
+    
     if (gameMode === 'exam') {
-      score += 10; // 正解で10点加算
-      comboCount++; // コンボ増加
+      score += 10; 
+      comboCount++; 
       
-      // 3問連続正解するごとに10秒追加
       if (comboCount === 3) {
         timeLeft += 10.0;
-        comboCount = 0; // コンボをリセットして次の3連続へ
+        comboCount = 0; 
       }
       
       document.getElementById('score-display').innerText = `スコア: ${score}`;
       document.getElementById('combo-display').innerText = `コンボ: ${comboCount}`;
     }
   } else {
+    // 不正解エフェクト
+    triggerFlash('wrong-flash');
+    playWrongSound();
+    
     if (gameMode === 'exam') {
-      score -= 5; // 不正解で5点減点
-      if (score < 0) score = 0; // 0点未満にはならない
-      comboCount = 0; // 不正解でコンボが途切れる
+      score -= 5; 
+      if (score < 0) score = 0; 
+      comboCount = 0; 
       
       document.getElementById('score-display').innerText = `スコア: ${score}`;
       document.getElementById('combo-display').innerText = `コンボ: ${comboCount}`;
     }
   }
-  // 正解・不正解にかかわらず、次の問題へ移行
   generateQuestion();
 }
 
-// 音の再生
-function playTone(freq){
-  const osc = audioCtx.createOscillator();
+// 画面を一時的に光らせる演出
+function triggerFlash(className) {
+  document.body.classList.remove('correct-flash', 'wrong-flash');
+  // 一瞬だけクラスを適用して背景色を変える
+  void document.body.offsetWidth; // リフローをトリガーしてアニメーションをリセット
+  document.body.classList.add(className);
+  setTimeout(() => {
+    document.body.classList.remove(className);
+  }, 150);
+}
+
+// 正解音（ピコーン！と上がる高い2連音）
+function playCorrectSound() {
+  const now = audioCtx.currentTime;
+  
+  // 1音目
+  const osc1 = audioCtx.createOscillator();
+  const gain1 = audioCtx.createGain();
+  osc1.frequency.setValueAtTime(523.25, now); // ド (C5)
+  osc1.connect(gain1); gain1.connect(audioCtx.destination);
+  gain1.gain.setValueAtTime(0.1, now);
+  gain1.gain.exponentialRampToValueAtTime(0.001, now + 0.15);
+  osc1.start(now); osc1.stop(now + 0.15);
+  
+  // 2音目（少し遅れて高い音）
+  const osc2 = audioCtx.createOscillator();
+  const gain2 = audioCtx.createGain();
+  osc2.frequency.setValueAtTime(783.99, now + 0.08); // ソ (G5)
+  osc2.connect(gain2); gain2.connect(audioCtx.destination);
+  gain2.gain.setValueAtTime(0.1, now + 0.08);
+  gain2.gain.exponentialRampToValueAtTime(0.001, now + 0.25);
+  osc2.start(now + 0.08); osc2.stop(now + 0.25);
+}
+
+// 不正解音（ブブーという低い濁った音）
+function playWrongSound() {
+  const now = audioCtx.currentTime;
+  
+  // 音を濁らせるために2つの低い周波数を同時に鳴らす
+  const osc1 = audioCtx.createOscillator();
+  const osc2 = audioCtx.createOscillator();
   const gain = audioCtx.createGain();
-  osc.type = "sine";
-  osc.frequency.value = freq;
-  osc.connect(gain); gain.connect(audioCtx.destination);
-  osc.start();
-  gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.5);
-  osc.stop(audioCtx.currentTime + 0.5);
+  
+  osc1.type = "sawtooth"; // 警告音っぽいノコギリ波
+  osc2.type = "sawtooth";
+  
+  osc1.frequency.setValueAtTime(130.81, now); // 低いド
+  osc2.frequency.setValueAtTime(138.59, now); // 少しずらして濁らせる
+  
+  osc1.connect(gain); osc2.connect(gain);
+  gain.connect(audioCtx.destination);
+  
+  gain.gain.setValueAtTime(0.15, now);
+  gain.gain.linearRampToValueAtTime(0.001, now + 0.3);
+  
+  osc1.start(now); osc1.stop(now + 0.3);
+  osc2.start(now); osc2.stop(now + 0.3);
 }
 </script>
 </body>
