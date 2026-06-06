@@ -2,15 +2,13 @@
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>譜読みマスター - 超中毒性Ver (完全修正版)</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>譜読みマスター - 超中毒性Ver (完全一致修正版)</title>
 <style>
   body { 
     background:#101018; color:white; text-align:center; font-family:sans-serif; margin:0; padding:10px;
     transition: background-color 0.1s ease;
     overflow-x: hidden;
-    -webkit-user-select: none;
-    user-select: none;
   }
   canvas { 
     background:white; border-radius: 8px; margin:10px auto; display: block;
@@ -123,52 +121,49 @@ let score = 0;
 let timeLeft = 0;
 let lastTimestamp = 0;
 let comboCount = 0; 
-let animationFrameId = null; 
 
 let juiceEffects = [];
 
-// 固定定義マップ
+// 【完全手動マップ】
+// 画面上のY座標(10px単位)に対して、楽譜上の正しい音名と周波数を1対1で完全定義しました。
+// 五線譜のラインは Y=60, 80, 100, 120, 140 です。
+
 const TREBLE_MAP = [
-  { y: 160, name: "ド", freq: 261.63 }, 
-  { y: 150, name: "レ", freq: 293.66 }, 
-  { y: 140, name: "ミ", freq: 329.63 }, 
-  { y: 130, name: "ファ",freq: 349.23 }, 
-  { y: 120, name: "ソ", freq: 392.00 }, 
-  { y: 110, name: "ラ", freq: 440.00 }, 
-  { y: 100, name: "シ", freq: 493.88 }, 
-  { y: 90,  name: "ド", freq: 523.25 }, 
-  { y: 80,  name: "レ", freq: 587.33 }, 
-  { y: 70,  name: "ミ", freq: 659.25 }, 
-  { y: 60,  name: "ファ",freq: 698.46 }, 
-  { y: 50,  name: "ソ", freq: 783.99 }, 
-  { y: 40,  name: "ラ", freq: 880.00 }, 
-  { y: 30,  name: "シ", freq: 987.77 }  
+  { y: 160, name: "ド", freq: 261.63 }, // 下第一線 (C4)
+  { y: 150, name: "レ", freq: 293.66 }, // 下第一下間 (D4)
+  { y: 140, name: "ミ", freq: 329.63 }, // 第一線 (E4)
+  { y: 130, name: "ファ",freq: 349.23 }, // 第一間 (F4)
+  { y: 120, name: "ソ", freq: 392.00 }, // 第二線 (G4)
+  { y: 110, name: "ラ", freq: 440.00 }, // 第二間 (A4)
+  { y: 100, name: "シ", freq: 493.88 }, // 第三線 (B4)
+  { y: 90,  name: "ド", freq: 523.25 }, // 第三間 (C5)
+  { y: 80,  name: "レ", freq: 587.33 }, // 第四線 (D5)
+  { y: 70,  name: "ミ", freq: 659.25 }, // 第四間 (E5)
+  { y: 60,  name: "ファ",freq: 698.46 }, // 第五線 (F5)
+  { y: 50,  name: "ソ", freq: 783.99 }, // 上第一間 (G5)
+  { y: 40,  name: "ラ", freq: 880.00 }, // 上第一線 (A5)
+  { y: 30,  name: "シ", freq: 987.77 }  // 上第二間 (B5)
 ];
 
 const BASS_MAP = [
-  { y: 160, name: "ミ", freq: 82.41  }, 
-  { y: 150, name: "ファ",freq: 87.31  }, 
-  { y: 140, name: "ソ", freq: 98.00  }, 
-  { y: 130, name: "ラ", freq: 110.00 }, 
-  { y: 120, name: "シ", freq: 123.47 }, 
-  { y: 110, name: "ド", freq: 130.81 }, 
-  { y: 100, name: "レ", freq: 146.83 }, 
-  { y: 90,  name: "ミ", freq: 164.81 }, 
-  { y: 80,  name: "ファ",freq: 174.61 }, 
-  { y: 70,  name: "ソ", freq: 196.00 }, 
-  { y: 60,  name: "ラ", freq: 220.00 }, 
-  { y: 50,  name: "シ", freq: 246.94 }, 
-  { y: 40,  name: "ド", freq: 261.63 }, 
-  { y: 30,  name: "レ", freq: 293.66 }  
+  { y: 160, name: "ミ", freq: 82.41  }, // 下第一線 (E2)
+  { y: 150, name: "ファ",freq: 87.31  }, // 下第一下間 (F2)
+  { y: 140, name: "ソ", freq: 98.00  }, // 第一線 (G2)
+  { y: 130, name: "ラ", freq: 110.00 }, // 第一間 (A2)
+  { y: 120, name: "シ", freq: 123.47 }, // 第二線 (B2)
+  { y: 110, name: "ド", freq: 130.81 }, // 第二間 (C3)
+  { y: 100, name: "レ", freq: 146.83 }, // 第三線 (D3)
+  { y: 90,  name: "ミ", freq: 164.81 }, // 第三間 (E3)
+  { y: 80,  name: "ファ",freq: 174.61 }, // 第四線 (F3)
+  { y: 70,  name: "ソ", freq: 196.00 }, // 第四間 (G3)
+  { y: 60,  name: "ラ", freq: 220.00 }, // 第五線 (A3)
+  { y: 50,  name: "シ", freq: 246.94 }, // 上第一間 (B3)
+  { y: 40,  name: "ド", freq: 261.63 }, // 上第一線・中央のド (C4)
+  { y: 30,  name: "レ", freq: 293.66 }  // 上第二間 (D4)
 ];
 
 function initAudio() { 
-  if (!audioCtx) {
-    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-  }
-  if (audioCtx && audioCtx.state === 'suspended') {
-    audioCtx.resume();
-  }
+  if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)(); 
 }
 
 function showScreen(screenId) {
@@ -178,13 +173,12 @@ function showScreen(screenId) {
 }
 
 function showHomeScreen() {
-  stopGameLoop();
   updateHighscoreDisplay();
   showScreen('screen-home');
 }
 
 function updateHighscoreDisplay() {
-  const key = `谱読みMaster_v5_highscore_${currentClef}`;
+  const key = `谱読みMaster_v3_highscore_${currentClef}`;
   const highscore = localStorage.getItem(key) || 0;
   document.getElementById('home-highscore').innerText = `🏆 ハイスコア: ${highscore}`;
 }
@@ -204,15 +198,7 @@ function selectClef(clef) {
   updateHighscoreDisplay();
 }
 
-function stopGameLoop() {
-  if (animationFrameId) {
-    cancelAnimationFrame(animationFrameId);
-    animationFrameId = null;
-  }
-}
-
 function startGameMode(mode) {
-  stopGameLoop(); 
   initAudio();
   gameMode = mode;
   juiceEffects = [];
@@ -249,7 +235,7 @@ function startGameMode(mode) {
   generateQuestion();
   
   lastTimestamp = performance.now();
-  animationFrameId = requestAnimationFrame(gameLoop);
+  requestAnimationFrame(gameLoop);
 }
 
 function gameLoop(timestamp) {
@@ -270,14 +256,13 @@ function gameLoop(timestamp) {
   }
   
   drawStaff();
-  animationFrameId = requestAnimationFrame(gameLoop);
+  requestAnimationFrame(gameLoop);
 }
 
 function processResult() {
-  stopGameLoop(); 
   gameActive = false;
   
-  const key = `谱読みMaster_v5_highscore_${currentClef}`;
+  const key = `谱読みMaster_v3_highscore_${currentClef}`;
   const oldHigh = parseInt(localStorage.getItem(key) || 0, 10);
   let isNewHigh = false;
   if (score > oldHigh) {
@@ -315,6 +300,7 @@ function endGame() {
 }
 
 function generateQuestion() {
+  // ト音・ヘ音それぞれの固定マップからランダムに1つのデータを選択
   const map = (currentClef === 'treble') ? TREBLE_MAP : BASS_MAP;
   const targetData = map[Math.floor(Math.random() * map.length)];
 
@@ -348,6 +334,7 @@ function drawStaff() {
   ctx.strokeStyle="#333";
   ctx.lineWidth = 2;
   
+  // 五線を描画 (Y: 60, 80, 100, 120, 140)
   for(let i=0; i<5; i++){
     ctx.beginPath(); ctx.moveTo(50, 60+i*20); ctx.lineTo(550, 60+i*20); ctx.stroke();
   }
@@ -356,22 +343,24 @@ function drawStaff() {
   ctx.fillStyle="black";
   ctx.fillText(currentClef === 'treble' ? "𝄞" : "𝄢", 60, currentClef === 'treble' ? 135 : 120);
   
-  if (correctNote) {
-    ctx.beginPath();
-    ctx.fillStyle = "black";
-    ctx.ellipse(300, correctNote.y, 10, 7, 0, 0, Math.PI*2);
-    ctx.fill();
+  ctx.beginPath();
+  ctx.fillStyle = "black";
+  ctx.ellipse(300, correctNote.y, 10, 7, 0, 0, Math.PI*2);
+  ctx.fill();
 
-    ctx.strokeStyle = "black";
-    ctx.lineWidth = 2;
-    for(let ly = 160; ly <= correctNote.y; ly += 20) {
-      ctx.beginPath(); ctx.moveTo(280, ly); ctx.lineTo(320, ly); ctx.stroke();
-    }
-    for(let ly = 40; ly >= correctNote.y; ly -= 20) {
-      ctx.beginPath(); ctx.moveTo(280, ly); ctx.lineTo(320, ly); ctx.stroke();
-    }
+  // 加線の描画（五線の外側にはみ出た場合に1本ずつ線を引く）
+  ctx.strokeStyle = "black";
+  ctx.lineWidth = 2;
+  // 下側の加線 (Y:160)
+  for(let ly = 160; ly <= correctNote.y; ly += 20) {
+    ctx.beginPath(); ctx.moveTo(280, ly); ctx.lineTo(320, ly); ctx.stroke();
+  }
+  // 上側の加線 (Y:40, 20)
+  for(let ly = 40; ly >= correctNote.y; ly -= 20) {
+    ctx.beginPath(); ctx.moveTo(280, ly); ctx.lineTo(320, ly); ctx.stroke();
   }
 
+  // ジュース（演出）のテキスト描画
   for (let i = juiceEffects.length - 1; i >= 0; i--) {
     let fx = juiceEffects[i];
     fx.y -= fx.vy;
@@ -395,8 +384,6 @@ function drawStaff() {
 }
 
 function checkAnswer(name) {
-  if (!correctNote) return;
-  initAudio(); // ユーザーの操作タイミングで確実にオーディオを有効化
   const multDisp = document.getElementById('mult-display');
   
   if (name === correctNote.name) {
@@ -419,7 +406,6 @@ function checkAnswer(name) {
         addJuiceText(`${comboCount} COMBO!`, 300, correctNote.y + 25, "#00ffcc", 22);
       }
       
-      // 【バグ修正】本番モードの時のみ時間追加を動かすように安全網を強化
       if (comboCount === 3) {
         timeLeft += 10.0;
         addJuiceText("+10秒!!", 120, 40, "#ff4444", 26);
@@ -478,49 +464,38 @@ function triggerFlash(className) {
 }
 
 function playTone(freq){
-  try {
-    if(!audioCtx) return;
-    const osc = audioCtx.createOscillator();
-    const gain = audioCtx.createGain();
-    osc.type = "sine";
-    osc.frequency.value = freq;
-    osc.connect(gain); gain.connect(audioCtx.destination);
-    osc.start();
-    gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.5);
-    osc.stop(audioCtx.currentTime + 0.5);
-  } catch (e) {
-    console.log("Audio Error:", e);
-  }
+  const osc = audioCtx.createOscillator();
+  const gain = audioCtx.createGain();
+  osc.type = "sine";
+  osc.frequency.value = freq;
+  osc.connect(gain); gain.connect(audioCtx.destination);
+  osc.start();
+  gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.5);
+  osc.stop(audioCtx.currentTime + 0.5);
 }
 
 function playWrongSound() {
-  try {
-    if(!audioCtx) return;
-    const now = audioCtx.currentTime;
-    const osc1 = audioCtx.createOscillator();
-    const osc2 = audioCtx.createOscillator();
-    const gain = audioCtx.createGain();
-    
-    osc1.type = "sawtooth"; 
-    osc2.type = "sawtooth";
-    
-    osc1.frequency.setValueAtTime(130.81, now); 
-    osc2.frequency.setValueAtTime(138.59, now); 
-    
-    osc1.connect(gain); osc2.connect(gain);
-    gain.connect(audioCtx.destination);
-    
-    gain.gain.setValueAtTime(0.15, now);
-    gain.gain.linearRampToValueAtTime(0.001, now + 0.3);
-    
-    osc1.start(now); osc1.stop(now + 0.3);
-    osc2.start(now); osc2.stop(now + 0.3);
-  } catch (e) {
-    console.log("Audio Error:", e);
-  }
+  const now = audioCtx.currentTime;
+  const osc1 = audioCtx.createOscillator();
+  const osc2 = audioCtx.createOscillator();
+  const gain = audioCtx.createGain();
+  
+  osc1.type = "sawtooth"; 
+  osc2.type = "sawtooth";
+  
+  osc1.frequency.setValueAtTime(130.81, now); 
+  osc2.frequency.setValueAtTime(138.59, now); 
+  
+  osc1.connect(gain); osc2.connect(gain);
+  gain.connect(audioCtx.destination);
+  
+  gain.gain.setValueAtTime(0.15, now);
+  gain.gain.linearRampToValueAtTime(0.001, now + 0.3);
+  
+  osc1.start(now); osc1.stop(now + 0.3);
+  osc2.start(now); osc2.stop(now + 0.3);
 }
 
-// 初回起動処理
 updateHighscoreDisplay();
 </script>
 </body>
