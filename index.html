@@ -3,12 +3,11 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>譜読みマスター - 復活動作安定Ver</title>
+<title>譜読みマスター - 完全互換動作Ver</title>
 <style>
   body { 
     background:#101018; color:white; text-align:center; font-family:sans-serif; margin:0; padding:10px;
     transition: background-color 0.1s ease;
-    overflow-x: hidden;
   }
   canvas { 
     background:white; border-radius: 8px; margin:10px auto; display: block;
@@ -18,11 +17,9 @@
   button { 
     margin:8px; padding:15px 24px; font-size: 18px; font-weight: bold; cursor: pointer;
     background: #4444ff; color: white; border: none; border-radius: 8px;
-    transition: 0.15s;
     box-shadow: 0 4px 0 #2222aa;
     display: inline-block;
   }
-  button:hover { background: #6666ff; transform: translateY(-2px); box-shadow: 0 6px 0 #2222aa; }
   button:active { transform: translateY(2px); box-shadow: 0 0 0 #2222aa; }
   
   .screen { display: none !important; }
@@ -44,8 +41,7 @@
   body.correct-flash-high { background-color: #1b661b; }
   body.wrong-flash { background-color: #551111; }
   
-  .badge { font-size: 4em; font-weight: bold; margin: 15px 0; text-shadow: 0 0 20px currentColor; display: inline-block; animation: popIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
-  @keyframes popIn { 0% { transform: scale(0); } 100% { transform: scale(1); } }
+  .badge { font-size: 4em; font-weight: bold; margin: 15px 0; text-shadow: 0 0 20px currentColor; display: inline-block; }
 </style>
 </head>
 <body>
@@ -181,7 +177,7 @@ function initAudio() {
       audioCtx.resume().catch(() => {});
     }
   } catch(e) {
-    console.log("Audio init blocked but bypassed safely");
+    console.log("Audio bypass");
   }
 }
 
@@ -267,7 +263,7 @@ function stopGameLoop() {
 function startGameMode(mode) {
   showScreen('screen-game');
   
-  setTimeout(() => { try { initAudio(); } catch(e){} }, 20);
+  try { initAudio(); } catch(e){}
 
   stopGameLoop(); 
   gameMode = mode;
@@ -470,7 +466,6 @@ function checkAnswer(name) {
   if (!correctNote) return;
   
   try { initAudio(); } catch(e){} 
-  
   const multDisp = document.getElementById('mult-display');
   
   if (name === correctNote.name) {
@@ -482,7 +477,6 @@ function checkAnswer(name) {
     else if (comboCount >= 5) flashClass = 'correct-flash-mid';
     
     triggerFlash(flashClass);
-    
     try { playTone(correctNote.freq); } catch(e){}
     
     if (gameMode === 'exam') {
@@ -522,7 +516,6 @@ function checkAnswer(name) {
 
   } else {
     triggerFlash('wrong-flash');
-    
     try { playWrongSound(); } catch(e){}
     
     if (gameMode === 'exam') {
@@ -542,24 +535,14 @@ function checkAnswer(name) {
 }
 
 function addJuiceText(text, x, y, color, size) {
-  juiceEffects.push({
-    text: text,
-    x: x,
-    y: y,
-    vy: 5, 
-    color: color,
-    size: size,
-    alpha: 1.0
-  });
+  juiceEffects.push({ text: text, x: x, y: y, vy: 5, color: color, size: size, alpha: 1.0 });
 }
 
 function triggerFlash(className) {
   document.body.classList.remove('correct-flash-low', 'correct-flash-mid', 'correct-flash-high', 'wrong-flash');
   void document.body.offsetWidth; 
   document.body.classList.add(className);
-  setTimeout(() => {
-    document.body.classList.remove(className);
-  }, 120);
+  setTimeout(() => { document.body.classList.remove(className); }, 120);
 }
 
 function playTone(freq){
@@ -567,15 +550,12 @@ function playTone(freq){
     if(!audioCtx) return;
     const osc = audioCtx.createOscillator();
     const gain = audioCtx.createGain();
-    osc.type = "sine";
-    osc.frequency.value = freq;
+    osc.type = "sine"; osc.frequency.value = freq;
     osc.connect(gain); gain.connect(audioCtx.destination);
     osc.start();
     gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.5);
     osc.stop(audioCtx.currentTime + 0.5);
-  } catch (e) {
-    console.log("Audio Error Bypassed:", e);
-  }
+  } catch (e) {}
 }
 
 function playWrongSound() {
@@ -585,29 +565,37 @@ function playWrongSound() {
     const osc1 = audioCtx.createOscillator();
     const osc2 = audioCtx.createOscillator();
     const gain = audioCtx.createGain();
-    
-    osc1.type = "sawtooth"; 
-    osc2.type = "sawtooth";
-    
-    osc1.frequency.setValueAtTime(130.81, now); 
-    osc2.frequency.setValueAtTime(138.59, now); 
-    
-    osc1.connect(gain); osc2.connect(gain);
-    gain.connect(audioCtx.destination);
-    
-    gain.gain.setValueAtTime(0.15, now);
-    gain.gain.linearRampToValueAtTime(0.001, now + 0.3);
-    
-    osc1.start(now); osc1.stop(now + 0.3);
-    osc2.start(now + 0.3); osc2.stop(now + 0.3);
-  } catch (e) {
-    console.log("Audio Error Bypassed:", e);
-  }
+    osc1.type = "sawtooth"; osc2.type = "sawtooth";
+    osc1.frequency.setValueAtTime(130.81, now); osc2.frequency.setValueAtTime(138.59, now); 
+    osc1.connect(gain); osc2.connect(gain); gain.connect(audioCtx.destination);
+    gain.gain.setValueAtTime(0.15, now); gain.gain.linearRampToValueAtTime(0.001, now + 0.3);
+    osc1.start(now); osc1.stop(now + 0.3); osc2.start(now + 0.3); osc2.stop(now + 0.3);
+  } catch (e) {}
 }
 
-window.addEventListener('DOMContentLoaded', () => {
+// 読み込み完了を待たずに即時初期化する強制スクリプト
+function forceInit() {
   updateHighscoreDisplay();
-});
+  
+  // 各ボタンのクリックイベントをJavaScript側から力技で再バインド
+  const binder = (id, fn) => {
+    const el = document.getElementById(id);
+    if(el) {
+      el.addEventListener('click', fn, {passive: false});
+      el.addEventListener('touchstart', () => {}, {passive: true}); // iOSの反応速度向上
+    }
+  };
+  
+  binder('btn-clef-treble', () => selectClef('treble'));
+  binder('btn-clef-bass', () => selectClef('bass'));
+  binder('btn-diff-easy', () => selectDifficulty('easy'));
+  binder('btn-diff-normal', () => selectDifficulty('normal'));
+  binder('btn-diff-hard', () => selectDifficulty('hard'));
+}
+
+// 2段階で初期化を確実に実行
+forceInit();
+window.onload = forceInit;
 </script>
 </body>
 </html>
