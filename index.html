@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>譜読みマスター - 超中毒性・難易度選択Ver</title>
+<title>譜読みマスター - 超中毒性・無限コンボVer</title>
 <style>
   body { 
     background:#101018; color:white; text-align:center; font-family:sans-serif; margin:0; padding:10px;
@@ -55,17 +55,20 @@
 
 <h1>🎶 譜読み練習サイト 🎶</h1>
 
+<!-- メインメニュー画面 -->
 <div id="screen-home" class="screen active">
   <div class="panel">
     <h2>メインメニュー</h2>
     <p style="font-size: 1.1em; color: #ccc;">練習したい設定を選んでください。</p>
     
+    <!-- 音部記号選択 -->
     <div class="sub-panel">
       <div style="font-size: 1.1em; font-weight: bold; margin-bottom: 8px;">1. 音部記号の選択</div>
       <button id="btn-clef-treble" onclick="selectClef('treble')" style="background: #ff55bb; box-shadow: 0 4px 0 #aa3377;">ト音記号</button>
       <button id="btn-clef-bass" onclick="selectClef('bass')" style="background: #555; box-shadow: 0 4px 0 #333;">ヘ音記号</button>
     </div>
 
+    <!-- 難易度選択（本番用） -->
     <div class="sub-panel">
       <div style="font-size: 1.1em; font-weight: bold; margin-bottom: 8px;">2. 難易度の選択 (本番モード用)</div>
       <button id="btn-diff-easy" onclick="selectDifficulty('easy')" style="background: #22cc22; box-shadow: 0 4px 0 #117711;">イージー (3連鎖毎)</button>
@@ -77,6 +80,7 @@
 
     <hr style="border-color: #333; margin: 20px 0;">
 
+    <!-- モード開始ボタン -->
     <div style="display: flex; flex-direction: column; align-items: center;">
       <button onclick="startGameMode('exam')" class="menu-btn" style="background: #ff4444; box-shadow: 0 4px 0 #aa2222;">🔥 本番開始 (1分半)</button>
       <button onclick="startGameMode('practice')" class="menu-btn" style="background: #666; box-shadow: 0 4px 0 #444;">✏️ 練習開始 (制限なし)</button>
@@ -84,6 +88,7 @@
   </div>
 </div>
 
+<!-- ゲーム・練習 プレイ画面 -->
 <div id="screen-game" class="screen">
   <div class="panel">
     <div id="game-mode-text" class="mode-title">モード</div>
@@ -95,6 +100,7 @@
     </div>
   </div>
 
+  <!-- 五線譜キャンバス -->
   <canvas id="staff" width="600" height="220"></canvas>
   
   <div class="panel">
@@ -105,6 +111,7 @@
   <button onclick="endGame()" style="background:#555; box-shadow:0 4px 0 #333; font-size: 18px; padding: 12px 24px; margin-top: 15px;">メニューに戻る</button>
 </div>
 
+<!-- リザルト（結果発表）画面 -->
 <div id="screen-result" class="screen">
   <div class="panel">
     <h2 style="color: #ffaa00; font-size: 2em; margin-bottom: 5px;">TIME UP!</h2>
@@ -128,7 +135,7 @@
 <script>
 let audioCtx = null;
 let currentClef = 'treble'; 
-let currentDifficulty = 'easy'; // 'easy', 'normal', 'hard'
+let currentDifficulty = 'easy'; 
 let gameMode = 'exam';      
 let gameActive = false;
 let correctNote = null;
@@ -209,7 +216,6 @@ function showHomeScreen() {
   showScreen('screen-home');
 }
 
-// ハイスコアキーを難易度ごとに分離
 function getHighscoreKey() {
   return `谱読みMaster_v8_highscore_${currentClef}_${currentDifficulty}`;
 }
@@ -478,4 +484,136 @@ function checkAnswer(name) {
     let addScore = 10 + (comboCount * 2);
     if (addScore > 50) addScore = 50;
     
-    let flashClass = '
+    let flashClass = 'correct-flash-low';
+    if (comboCount >= 10) flashClass = 'correct-flash-high';
+    else if (comboCount >= 5) flashClass = 'correct-flash-mid';
+    
+    triggerFlash(flashClass);
+    playTone(correctNote.freq);
+    
+    if (gameMode === 'exam') {
+      score += addScore; 
+      comboCount++; // 正解したためコンボ数をカウントアップ
+      
+      addJuiceText(`+${addScore}!`, 300, correctNote.y - 15, "#ffcc00", 32);
+      if (comboCount >= 2) {
+        addJuiceText(`${comboCount} COMBO!`, 300, correctNote.y + 25, "#00ffcc", 22);
+      }
+      
+      // 【難易度ごとの倍数判定】ここから comboCount = 0; を完全に削除しました
+      let isBonus = false;
+      if (currentDifficulty === 'easy' && comboCount % 3 === 0) isBonus = true;
+      if (currentDifficulty === 'normal' && comboCount % 5 === 0) isBonus = true;
+      if (currentDifficulty === 'hard' && comboCount % 10 === 0) isBonus = true;
+      
+      if (isBonus) {
+        timeLeft += 5.0;
+        addJuiceText("+5秒!!", 120, 40, "#ff4444", 28);
+      }
+      
+      let nextAddScore = 10 + (comboCount * 2);
+      if (nextAddScore > 50) nextAddScore = 50;
+      if(multDisp) {
+        multDisp.innerText = `獲得点数: +${nextAddScore}`;
+        if(comboCount > 0) multDisp.innerText += ` (コンボボーナス中!)`;
+      }
+      
+      const scoreDisp = document.getElementById('score-display');
+      const comboDisp = document.getElementById('combo-display');
+      if(scoreDisp) scoreDisp.innerText = `スコア: ${score}`;
+      if(comboDisp) comboDisp.innerText = `コンボ: ${comboCount}`;
+    } else {
+      addJuiceText("正解!", 300, correctNote.y - 15, "#22cc22", 28);
+    }
+    generateQuestion();
+
+  } else {
+    triggerFlash('wrong-flash');
+    playWrongSound();
+    
+    if (gameMode === 'exam') {
+      score -= 5; 
+      if (score < 0) score = 0; 
+      comboCount = 0; // ミスした時だけゼロにリセット
+      
+      addJuiceText("-5", 300, correctNote.y - 15, "#ff4444", 28);
+      if(multDisp) multDisp.innerText = `獲得点数: +10`;
+      
+      const scoreDisp = document.getElementById('score-display');
+      const comboDisp = document.getElementById('combo-display');
+      if(scoreDisp) scoreDisp.innerText = `スコア: ${score}`;
+      if(comboDisp) comboDisp.innerText = `コンボ: ${comboCount}`;
+    }
+  }
+}
+
+function addJuiceText(text, x, y, color, size) {
+  juiceEffects.push({
+    text: text,
+    x: x,
+    y: y,
+    vy: 5, 
+    color: color,
+    size: size,
+    alpha: 1.0
+  });
+}
+
+function triggerFlash(className) {
+  document.body.classList.remove('correct-flash-low', 'correct-flash-mid', 'correct-flash-high', 'wrong-flash');
+  void document.body.offsetWidth; 
+  document.body.classList.add(className);
+  setTimeout(() => {
+    document.body.classList.remove(className);
+  }, 120);
+}
+
+function playTone(freq){
+  try {
+    if(!audioCtx) return;
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.type = "sine";
+    osc.frequency.value = freq;
+    osc.connect(gain); gain.connect(audioCtx.destination);
+    osc.start();
+    gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.5);
+    osc.stop(audioCtx.currentTime + 0.5);
+  } catch (e) {
+    console.log("Audio Error:", e);
+  }
+}
+
+function playWrongSound() {
+  try {
+    if(!audioCtx) return;
+    const now = audioCtx.currentTime;
+    const osc1 = audioCtx.createOscillator();
+    const osc2 = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    
+    osc1.type = "sawtooth"; 
+    osc2.type = "sawtooth";
+    
+    osc1.frequency.setValueAtTime(130.81, now); 
+    osc2.frequency.setValueAtTime(138.59, now); 
+    
+    osc1.connect(gain); osc2.connect(gain);
+    gain.connect(audioCtx.destination);
+    
+    gain.gain.setValueAtTime(0.15, now);
+    gain.gain.linearRampToValueAtTime(0.001, now + 0.3);
+    
+    osc1.start(now); osc1.stop(now + 0.3);
+    osc2.start(now + 0.3); osc2.stop(now + 0.3);
+  } catch (e) {
+    console.log("Audio Error:", e);
+  }
+}
+
+window.addEventListener('DOMContentLoaded', () => {
+  updateHighscoreDisplay();
+});
+</script>
+</body>
+</html>
