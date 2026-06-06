@@ -2,13 +2,15 @@
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>譜読みマスター - 超中毒性Ver (動作安定化版)</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>譜読みマスター - 超中毒性Ver (完全修正版)</title>
 <style>
   body { 
     background:#101018; color:white; text-align:center; font-family:sans-serif; margin:0; padding:10px;
     transition: background-color 0.1s ease;
     overflow-x: hidden;
+    -webkit-user-select: none;
+    user-select: none;
   }
   canvas { 
     background:white; border-radius: 8px; margin:10px auto; display: block;
@@ -121,10 +123,11 @@ let score = 0;
 let timeLeft = 0;
 let lastTimestamp = 0;
 let comboCount = 0; 
-let animationFrameId = null; // ループアニメーション停止用のID管理
+let animationFrameId = null; 
 
 let juiceEffects = [];
 
+// 固定定義マップ
 const TREBLE_MAP = [
   { y: 160, name: "ド", freq: 261.63 }, 
   { y: 150, name: "レ", freq: 293.66 }, 
@@ -160,7 +163,12 @@ const BASS_MAP = [
 ];
 
 function initAudio() { 
-  if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)(); 
+  if (!audioCtx) {
+    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  }
+  if (audioCtx && audioCtx.state === 'suspended') {
+    audioCtx.resume();
+  }
 }
 
 function showScreen(screenId) {
@@ -176,7 +184,7 @@ function showHomeScreen() {
 }
 
 function updateHighscoreDisplay() {
-  const key = `谱読みMaster_v4_highscore_${currentClef}`;
+  const key = `谱読みMaster_v5_highscore_${currentClef}`;
   const highscore = localStorage.getItem(key) || 0;
   document.getElementById('home-highscore').innerText = `🏆 ハイスコア: ${highscore}`;
 }
@@ -204,7 +212,7 @@ function stopGameLoop() {
 }
 
 function startGameMode(mode) {
-  stopGameLoop(); // 既存のループがあれば確実に停止
+  stopGameLoop(); 
   initAudio();
   gameMode = mode;
   juiceEffects = [];
@@ -266,10 +274,10 @@ function gameLoop(timestamp) {
 }
 
 function processResult() {
-  stopGameLoop(); // タイムアップ時にループを完全に止める
+  stopGameLoop(); 
   gameActive = false;
   
-  const key = `谱読みMaster_v4_highscore_${currentClef}`;
+  const key = `谱読みMaster_v5_highscore_${currentClef}`;
   const oldHigh = parseInt(localStorage.getItem(key) || 0, 10);
   let isNewHigh = false;
   if (score > oldHigh) {
@@ -388,6 +396,7 @@ function drawStaff() {
 
 function checkAnswer(name) {
   if (!correctNote) return;
+  initAudio(); // ユーザーの操作タイミングで確実にオーディオを有効化
   const multDisp = document.getElementById('mult-display');
   
   if (name === correctNote.name) {
@@ -410,6 +419,7 @@ function checkAnswer(name) {
         addJuiceText(`${comboCount} COMBO!`, 300, correctNote.y + 25, "#00ffcc", 22);
       }
       
+      // 【バグ修正】本番モードの時のみ時間追加を動かすように安全網を強化
       if (comboCount === 3) {
         timeLeft += 10.0;
         addJuiceText("+10秒!!", 120, 40, "#ff4444", 26);
@@ -469,6 +479,7 @@ function triggerFlash(className) {
 
 function playTone(freq){
   try {
+    if(!audioCtx) return;
     const osc = audioCtx.createOscillator();
     const gain = audioCtx.createGain();
     osc.type = "sine";
@@ -484,6 +495,7 @@ function playTone(freq){
 
 function playWrongSound() {
   try {
+    if(!audioCtx) return;
     const now = audioCtx.currentTime;
     const osc1 = audioCtx.createOscillator();
     const osc2 = audioCtx.createOscillator();
@@ -508,6 +520,7 @@ function playWrongSound() {
   }
 }
 
+// 初回起動処理
 updateHighscoreDisplay();
 </script>
 </body>
