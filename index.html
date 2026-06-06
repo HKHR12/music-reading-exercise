@@ -2,15 +2,13 @@
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>譜読みマスター - 超中毒性・完全安全動作Ver</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>譜読みマスター - 復活動作安定Ver</title>
 <style>
   body { 
     background:#101018; color:white; text-align:center; font-family:sans-serif; margin:0; padding:10px;
     transition: background-color 0.1s ease;
     overflow-x: hidden;
-    -webkit-user-select: none;
-    user-select: none;
   }
   canvas { 
     background:white; border-radius: 8px; margin:10px auto; display: block;
@@ -21,7 +19,6 @@
     margin:8px; padding:15px 24px; font-size: 18px; font-weight: bold; cursor: pointer;
     background: #4444ff; color: white; border: none; border-radius: 8px;
     transition: 0.15s;
-    touch-action: manipulation;
     box-shadow: 0 4px 0 #2222aa;
     display: inline-block;
   }
@@ -268,10 +265,8 @@ function stopGameLoop() {
 }
 
 function startGameMode(mode) {
-  // 画面移動を最優先
   showScreen('screen-game');
   
-  // オーディオ初期化でクラッシュしないよう非同期、かつ完全隔離
   setTimeout(() => { try { initAudio(); } catch(e){} }, 20);
 
   stopGameLoop(); 
@@ -372,7 +367,7 @@ function processResult() {
   else if (score >= 170) { rank = "A"; color = "#00ffcc"; comment = "合格点！すらすら読めるようになってきましたね！"; }
   else if (score >= 110) { rank = "B"; color = "#00ff00"; comment = "いい調子！その調子でスコアを伸ばしましょう！"; }
   else if (score >= 60)  { rank = "C"; color = "#2288ff"; comment = "少しずつ迷わずに読める音が増えてきました！"; }
-  else if (score >= 20)  { rank = "D"; color = "#aa55ff"; comment = "一歩一歩前前進しています！何度も挑戦だ！"; }
+  else if (score >= 20)  { rank = "D"; color = "#aa55ff"; comment = "一歩一歩前進しています！何度も挑戦だ！"; }
   
   const badge = document.getElementById('result-badge');
   const commentEl = document.getElementById('result-comment');
@@ -474,7 +469,6 @@ function drawStaff() {
 function checkAnswer(name) {
   if (!correctNote) return;
   
-  // オーディオ初期化の失敗が全体に波及しないよう完全に隔離
   try { initAudio(); } catch(e){} 
   
   const multDisp = document.getElementById('mult-display');
@@ -489,7 +483,6 @@ function checkAnswer(name) {
     
     triggerFlash(flashClass);
     
-    // 音を鳴らす処理を完全に防護。失敗してもゲームは正常に進む
     try { playTone(correctNote.freq); } catch(e){}
     
     if (gameMode === 'exam') {
@@ -530,7 +523,6 @@ function checkAnswer(name) {
   } else {
     triggerFlash('wrong-flash');
     
-    // 不正解音も完全に防護
     try { playWrongSound(); } catch(e){}
     
     if (gameMode === 'exam') {
