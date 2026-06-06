@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>譜読みマスター - 超中毒性Ver (画面遷移最優先版)</title>
+<title>譜読みマスター - 超中毒性・難易度選択Ver</title>
 <style>
   body { 
     background:#101018; color:white; text-align:center; font-family:sans-serif; margin:0; padding:10px;
@@ -18,7 +18,7 @@
     max-width: 100%; height: auto;
   }
   button { 
-    margin:8px; padding:18px 28px; font-size: 20px; font-weight: bold; cursor: pointer;
+    margin:8px; padding:15px 24px; font-size: 18px; font-weight: bold; cursor: pointer;
     background: #4444ff; color: white; border: none; border-radius: 8px;
     transition: 0.15s;
     touch-action: manipulation;
@@ -34,10 +34,12 @@
   .panel { margin:15px auto; padding: 20px; border: 1px solid #333; border-radius: 12px; background: #1a1a24; max-width: 600px; box-shadow: 0 8px 16px rgba(0,0,0,0.3); }
   .stats-grid { display: flex; justify-content: center; gap: 25px; margin-bottom: 10px; font-weight: bold; font-size: 1.4em; }
   .choice-container { display: flex; justify-content: center; flex-wrap: wrap; max-width: 600px; margin: 0 auto; gap: 5px; }
-  .mode-title { font-size: 1.8em; font-weight: bold; margin-bottom: 15px; color: #ffaa00; }
+  .mode-title { font-size: 1.8em; font-weight: bold; margin-bottom: 5px; color: #ffaa00; }
+  .mode-subtitle { font-size: 1.1em; font-weight: bold; margin-bottom: 15px; color: #aaa; }
   
-  .menu-btn { font-size: 22px; padding: 20px 40px; margin: 10px; width: 85%; max-width: 320px; }
+  .menu-btn { font-size: 20px; padding: 15px 30px; margin: 8px; width: 85%; max-width: 320px; }
   
+  .sub-panel { background: #252535; padding: 12px; border-radius: 8px; margin: 10px 0; }
   .highscore-text { font-size: 1.1em; color: #ffcc00; font-weight: bold; margin-top: 5px; text-shadow: 0 0 8px rgba(255,204,0,0.4); }
 
   body.correct-flash-low { background-color: #0b2b0b; }
@@ -56,20 +58,28 @@
 <div id="screen-home" class="screen active">
   <div class="panel">
     <h2>メインメニュー</h2>
-    <p style="font-size: 1.1em; color: #ccc;">練習したい記号とモードを選んでください。</p>
+    <p style="font-size: 1.1em; color: #ccc;">練習したい設定を選んでください。</p>
     
-    <div style="margin-bottom: 25px;">
-      <div style="font-size: 1.2em; font-weight: bold; margin-bottom: 10px;">音部記号の選択：</div>
-      <button id="btn-clef-treble" onclick="selectClef('treble')" style="background: #ff55bb; font-size: 20px; padding: 15px 30px;">ト音記号</button>
-      <button id="btn-clef-bass" onclick="selectClef('bass')" style="background: #555; font-size: 20px; padding: 15px 30px;">ヘ音記号</button>
-      <div id="home-highscore" class="highscore-text">🏆 ハイスコア: 0</div>
+    <div class="sub-panel">
+      <div style="font-size: 1.1em; font-weight: bold; margin-bottom: 8px;">1. 音部記号の選択</div>
+      <button id="btn-clef-treble" onclick="selectClef('treble')" style="background: #ff55bb; box-shadow: 0 4px 0 #aa3377;">ト音記号</button>
+      <button id="btn-clef-bass" onclick="selectClef('bass')" style="background: #555; box-shadow: 0 4px 0 #333;">ヘ音記号</button>
     </div>
 
-    <hr style="border-color: #333; margin: 25px 0;">
+    <div class="sub-panel">
+      <div style="font-size: 1.1em; font-weight: bold; margin-bottom: 8px;">2. 難易度の選択 (本番モード用)</div>
+      <button id="btn-diff-easy" onclick="selectDifficulty('easy')" style="background: #22cc22; box-shadow: 0 4px 0 #117711;">イージー (3連鎖毎)</button>
+      <button id="btn-diff-normal" onclick="selectDifficulty('normal')" style="background: #555; box-shadow: 0 4px 0 #333;">ノーマル (5連鎖毎)</button>
+      <button id="btn-diff-hard" onclick="selectDifficulty('hard')" style="background: #555; box-shadow: 0 4px 0 #333;">ハード (10連鎖毎)</button>
+    </div>
+
+    <div id="home-highscore" class="highscore-text">🏆 ハイスコア: 0</div>
+
+    <hr style="border-color: #333; margin: 20px 0;">
 
     <div style="display: flex; flex-direction: column; align-items: center;">
       <button onclick="startGameMode('exam')" class="menu-btn" style="background: #ff4444; box-shadow: 0 4px 0 #aa2222;">🔥 本番開始 (1分半)</button>
-      <button onclick="startGameMode('practice')" class="menu-btn" style="background: #22cc22; box-shadow: 0 4px 0 #117711;">✏️ 練習開始 (制限なし)</button>
+      <button onclick="startGameMode('practice')" class="menu-btn" style="background: #666; box-shadow: 0 4px 0 #444;">✏️ 練習開始 (制限なし)</button>
     </div>
   </div>
 </div>
@@ -77,6 +87,7 @@
 <div id="screen-game" class="screen">
   <div class="panel">
     <div id="game-mode-text" class="mode-title">モード</div>
+    <div id="game-diff-text" class="mode-subtitle">難易度</div>
     <div class="stats-grid">
       <div id="timer-display">残り時間: --</div>
       <div id="score-display">スコア: 0</div>
@@ -117,6 +128,7 @@
 <script>
 let audioCtx = null;
 let currentClef = 'treble'; 
+let currentDifficulty = 'easy'; // 'easy', 'normal', 'hard'
 let gameMode = 'exam';      
 let gameActive = false;
 let correctNote = null;
@@ -172,7 +184,7 @@ function initAudio() {
       audioCtx.resume();
     }
   } catch(e) {
-    console.log("Audio init skipped context blockade");
+    console.log("Audio init failed safely");
   }
 }
 
@@ -197,12 +209,20 @@ function showHomeScreen() {
   showScreen('screen-home');
 }
 
+// ハイスコアキーを難易度ごとに分離
+function getHighscoreKey() {
+  return `谱読みMaster_v8_highscore_${currentClef}_${currentDifficulty}`;
+}
+
 function updateHighscoreDisplay() {
-  const key = `谱読みMaster_v7_highscore_${currentClef}`;
+  const key = getHighscoreKey();
   const highscore = localStorage.getItem(key) || 0;
   const scoreEl = document.getElementById('home-highscore');
   if (scoreEl) {
-    scoreEl.innerText = `🏆 ハイスコア: ${highscore}`;
+    let diffName = "イージー";
+    if (currentDifficulty === 'normal') diffName = "ノーマル";
+    if (currentDifficulty === 'hard') diffName = "ハード";
+    scoreEl.innerText = `🏆 ハイスコア [${diffName}]: ${highscore}`;
   }
 }
 
@@ -213,12 +233,30 @@ function selectClef(clef) {
   
   if (trebleBtn && bassBtn) {
     if (clef === 'treble') {
-      trebleBtn.style.background = '#ff55bb';
-      bassBtn.style.background = '#555';
+      trebleBtn.style.background = '#ff55bb'; trebleBtn.style.boxShadow = '0 4px 0 #aa3377';
+      bassBtn.style.background = '#555'; bassBtn.style.boxShadow = '0 4px 0 #333';
     } else {
-      trebleBtn.style.background = '#555';
-      bassBtn.style.background = '#55bbff';
+      trebleBtn.style.background = '#555'; trebleBtn.style.boxShadow = '0 4px 0 #333';
+      bassBtn.style.background = '#55bbff'; bassBtn.style.boxShadow = '0 4px 0 #3377aa';
     }
+  }
+  updateHighscoreDisplay();
+}
+
+function selectDifficulty(diff) {
+  currentDifficulty = diff;
+  const easyBtn = document.getElementById('btn-diff-easy');
+  const normalBtn = document.getElementById('btn-diff-normal');
+  const hardBtn = document.getElementById('btn-diff-hard');
+  
+  if (easyBtn && normalBtn && hardBtn) {
+    easyBtn.style.background = '#555'; easyBtn.style.boxShadow = '0 4px 0 #333';
+    normalBtn.style.background = '#555'; normalBtn.style.boxShadow = '0 4px 0 #333';
+    hardBtn.style.background = '#555'; hardBtn.style.boxShadow = '0 4px 0 #333';
+    
+    if (diff === 'easy') { easyBtn.style.background = '#22cc22'; easyBtn.style.boxShadow = '0 4px 0 #117711'; }
+    if (diff === 'normal') { normalBtn.style.background = '#ffaa00'; normalBtn.style.boxShadow = '0 4px 0 #aa7700'; }
+    if (diff === 'hard') { hardBtn.style.background = '#ff4444'; hardBtn.style.boxShadow = '0 4px 0 #aa2222'; }
   }
   updateHighscoreDisplay();
 }
@@ -231,10 +269,7 @@ function stopGameLoop() {
 }
 
 function startGameMode(mode) {
-  // 1. 何よりも最優先で画面を切り替える（ブラウザのブロックを回避）
   showScreen('screen-game');
-  
-  // 2. 音の準備は画面切り替えの後に安全に行う
   setTimeout(() => { initAudio(); }, 10);
 
   stopGameLoop(); 
@@ -242,13 +277,20 @@ function startGameMode(mode) {
   juiceEffects = [];
   
   const modeText = document.getElementById('game-mode-text');
+  const diffText = document.getElementById('game-diff-text');
   const timerDisp = document.getElementById('timer-display');
   const scoreDisp = document.getElementById('score-display');
   const comboDisp = document.getElementById('combo-display');
   const multDisp = document.getElementById('mult-display');
   
   if (gameMode === 'exam') {
+    let diffStr = "🟢 イージーモード (3コンボ毎に+5秒)";
+    if(currentDifficulty === 'normal') diffStr = "🟡 ノーマルモード (5コンボ毎に+5秒)";
+    if(currentDifficulty === 'hard') diffStr = "🔴 ハードモード (10コンボ毎に+5秒)";
+    
     if(modeText) { modeText.innerText = "🔥 本番モード"; modeText.style.color = "#ff4444"; }
+    if(diffText) { diffText.innerText = diffStr; diffText.style.display = "block"; }
+    
     score = 0;
     comboCount = 0;
     timeLeft = 90.0; 
@@ -258,6 +300,7 @@ function startGameMode(mode) {
     if(multDisp) { multDisp.innerText = `獲得点数: +10`; multDisp.style.display = "block"; }
   } else {
     if(modeText) { modeText.innerText = "✏️ 練習モード"; modeText.style.color = "#22cc22"; }
+    if(diffText) { diffText.style.display = "none"; }
     if(timerDisp) timerDisp.innerText = "残り時間: ∞";
     if(scoreDisp) scoreDisp.style.display = "none";
     if(comboDisp) comboDisp.style.display = "none";
@@ -297,7 +340,7 @@ function processResult() {
   stopGameLoop(); 
   gameActive = false;
   
-  const key = `谱読みMaster_v7_highscore_${currentClef}`;
+  const key = getHighscoreKey();
   const oldHigh = parseInt(localStorage.getItem(key) || 0, 10);
   let isNewHigh = false;
   if (score > oldHigh) {
@@ -309,7 +352,11 @@ function processResult() {
   const scoreEl = document.getElementById('result-score');
   const noticeEl = document.getElementById('result-highscore-notice');
   
-  if(clefTextEl) clefTextEl.innerText = currentClef === 'treble' ? "【 ト音記号コース 】" : "【 ヘ音記号コース 】";
+  let diffName = "イージー";
+  if (currentDifficulty === 'normal') diffName = "ノーマル";
+  if (currentDifficulty === 'hard') diffName = "ハード";
+  
+  if(clefTextEl) clefTextEl.innerText = (currentClef === 'treble' ? "【 ト音記号 " : "【 ヘ音記号 ") + diffName + "コース 】";
   if(scoreEl) scoreEl.innerText = score;
   if(noticeEl) noticeEl.style.display = isNewHigh ? "block" : "none";
   
@@ -358,7 +405,7 @@ function createChoiceButtons() {
   ["ド","レ","ミ","ファ","ソ","ラ","シ"].forEach(name => {
     const btn = document.createElement("button");
     btn.innerText = name;
-    btn.style.padding = "20px 30px";  
+    btn.style.padding = "18px 26px";  
     btn.style.fontSize = "22px";      
     btn.onclick = (e) => {
       e.preventDefault();
@@ -431,131 +478,4 @@ function checkAnswer(name) {
     let addScore = 10 + (comboCount * 2);
     if (addScore > 50) addScore = 50;
     
-    let flashClass = 'correct-flash-low';
-    if (comboCount >= 10) flashClass = 'correct-flash-high';
-    else if (comboCount >= 5) flashClass = 'correct-flash-mid';
-    
-    triggerFlash(flashClass);
-    playTone(correctNote.freq);
-    
-    if (gameMode === 'exam') {
-      score += addScore; 
-      comboCount++; 
-      
-      addJuiceText(`+${addScore}!`, 300, correctNote.y - 15, "#ffcc00", 32);
-      if (comboCount >= 2) {
-        addJuiceText(`${comboCount} COMBO!`, 300, correctNote.y + 25, "#00ffcc", 22);
-      }
-      
-      if (comboCount === 3) {
-        timeLeft += 10.0;
-        addJuiceText("+10秒!!", 120, 40, "#ff4444", 26);
-        comboCount = 0; 
-      }
-      
-      let nextAddScore = 10 + (comboCount * 2);
-      if (nextAddScore > 50) nextAddScore = 50;
-      if(multDisp) {
-        multDisp.innerText = `獲得点数: +${nextAddScore}`;
-        if(comboCount > 0) multDisp.innerText += ` (コンボボーナス中!)`;
-      }
-      
-      const scoreDisp = document.getElementById('score-display');
-      const comboDisp = document.getElementById('combo-display');
-      if(scoreDisp) scoreDisp.innerText = `スコア: ${score}`;
-      if(comboDisp) comboDisp.innerText = `コンボ: ${comboCount}`;
-    } else {
-      addJuiceText("正解!", 300, correctNote.y - 15, "#22cc22", 28);
-    }
-    generateQuestion();
-
-  } else {
-    triggerFlash('wrong-flash');
-    playWrongSound();
-    
-    if (gameMode === 'exam') {
-      score -= 5; 
-      if (score < 0) score = 0; 
-      comboCount = 0; 
-      
-      addJuiceText("-5", 300, correctNote.y - 15, "#ff4444", 28);
-      if(multDisp) multDisp.innerText = `獲得点数: +10`;
-      
-      const scoreDisp = document.getElementById('score-display');
-      const comboDisp = document.getElementById('combo-display');
-      if(scoreDisp) scoreDisp.innerText = `スコア: ${score}`;
-      if(comboDisp) comboDisp.innerText = `コンボ: ${comboCount}`;
-    }
-  }
-}
-
-function addJuiceText(text, x, y, color, size) {
-  juiceEffects.push({
-    text: text,
-    x: x,
-    y: y,
-    vy: 5, 
-    color: color,
-    size: size,
-    alpha: 1.0
-  });
-}
-
-function triggerFlash(className) {
-  document.body.classList.remove('correct-flash-low', 'correct-flash-mid', 'correct-flash-high', 'wrong-flash');
-  void document.body.offsetWidth; 
-  document.body.classList.add(className);
-  setTimeout(() => {
-    document.body.classList.remove(className);
-  }, 120);
-}
-
-function playTone(freq){
-  try {
-    if(!audioCtx) return;
-    const osc = audioCtx.createOscillator();
-    const gain = audioCtx.createGain();
-    osc.type = "sine";
-    osc.frequency.value = freq;
-    osc.connect(gain); gain.connect(audioCtx.destination);
-    osc.start();
-    gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.5);
-    osc.stop(audioCtx.currentTime + 0.5);
-  } catch (e) {
-    console.log("Audio Error:", e);
-  }
-}
-
-function playWrongSound() {
-  try {
-    if(!audioCtx) return;
-    const now = audioCtx.currentTime;
-    const osc1 = audioCtx.createOscillator();
-    const osc2 = audioCtx.createOscillator();
-    const gain = audioCtx.createGain();
-    
-    osc1.type = "sawtooth"; 
-    osc2.type = "sawtooth";
-    
-    osc1.frequency.setValueAtTime(130.81, now); 
-    osc2.frequency.setValueAtTime(138.59, now); 
-    
-    osc1.connect(gain); osc2.connect(gain);
-    gain.connect(audioCtx.destination);
-    
-    gain.gain.setValueAtTime(0.15, now);
-    gain.gain.linearRampToValueAtTime(0.001, now + 0.3);
-    
-    osc1.start(now); osc1.stop(now + 0.3);
-    osc2.start(now + 0.3); osc2.stop(now + 0.3);
-  } catch (e) {
-    console.log("Audio Error:", e);
-  }
-}
-
-window.addEventListener('DOMContentLoaded', () => {
-  updateHighscoreDisplay();
-});
-</script>
-</body>
-</html>
+    let flashClass = '
