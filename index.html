@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>譜読みマスター - 超中毒性Ver</title>
+<title>譜読みマスター - 超中毒性Ver (ヘ音記号修正版)</title>
 <style>
   body { 
     background:#101018; color:white; text-align:center; font-family:sans-serif; margin:0; padding:10px;
@@ -34,16 +34,13 @@
   
   .menu-btn { font-size: 22px; padding: 20px 40px; margin: 10px; width: 85%; max-width: 320px; }
   
-  /* ハイスコア表示用スタイル */
   .highscore-text { font-size: 1.1em; color: #ffcc00; font-weight: bold; margin-top: 5px; text-shadow: 0 0 8px rgba(255,204,0,0.4); }
 
-  /* ド派手なエフェクト用クラス */
   body.correct-flash-low { background-color: #0b2b0b; }
   body.correct-flash-mid { background-color: #114411; }
   body.correct-flash-high { background-color: #1b661b; }
   body.wrong-flash { background-color: #551111; }
   
-  /* 結果画面のランクバッジ用 */
   .badge { font-size: 4em; font-weight: bold; margin: 15px 0; text-shadow: 0 0 20px currentColor; display: inline-block; animation: popIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
   @keyframes popIn { 0% { transform: scale(0); } 100% { transform: scale(1); } }
 </style>
@@ -120,23 +117,24 @@ let gameMode = 'exam';
 let gameActive = false;
 let correctNote = null;
 
-// 本番モード用変数
 let score = 0;
 let timeLeft = 0;
 let lastTimestamp = 0;
 let comboCount = 0; 
 
-// ジュース（演出）用のオブジェクト
 let juiceEffects = [];
 
+// 各音階データの再定義（五線譜上の絶対的なステップ値に修正）
+// ト音記号：五線譜の一番下の線（ミ）を基準にステップ数を設定
+// ヘ音記号：五線譜の一番下の線（ソ）を基準にステップ数を設定
 const NOTES_DATA = [
-  {name:"ド", trebleY:160, bassY:40,  step: 0},
-  {name:"レ", trebleY:150, bassY:130, step: 1}, 
-  {name:"ミ", trebleY:140, bassY:120, step: 2}, 
-  {name:"ファ",trebleY:130, bassY:110, step: 3},
-  {name:"ソ", trebleY:120, bassY:100, step: 4}, 
-  {name:"ラ", trebleY:110, bassY:90,  step: 5}, 
-  {name:"シ", trebleY:100, bassY:80,  step: 6}  
+  {name:"ド", trebleStep: -2, bassStep: 3,  semitone: 0},  // C
+  {name:"レ", trebleStep: -1, bassStep: 4,  semitone: 2},  // D
+  {name:"ミ", trebleStep: 0,  bassStep: 5,  semitone: 4},  // E
+  {name:"ファ",trebleStep: 1,  bassStep: 6,  semitone: 5},  // F
+  {name:"ソ", trebleStep: 2,  bassStep: 0,  semitone: 7},  // G
+  {name:"ラ", trebleStep: 3,  bassStep: 1,  semitone: 9},  // A
+  {name:"シ", trebleStep: 4,  bassStep: 2,  semitone: 11}  // B
 ];
 
 function initAudio() { 
@@ -154,9 +152,8 @@ function showHomeScreen() {
   showScreen('screen-home');
 }
 
-// ハイスコアの読み込みと表示更新
 function updateHighscoreDisplay() {
-  const key = `谱読みMaster_v1_highscore_${currentClef}`;
+  const key = `谱読みMaster_v2_highscore_${currentClef}`;
   const highscore = localStorage.getItem(key) || 0;
   document.getElementById('home-highscore').innerText = `🏆 ハイスコア: ${highscore}`;
 }
@@ -233,17 +230,14 @@ function gameLoop(timestamp) {
     document.getElementById('timer-display').innerText = `残り時間: ${timeLeft.toFixed(1)}s`;
   }
   
-  // ジュース演出の描画アップデート
   drawStaff();
   requestAnimationFrame(gameLoop);
 }
 
-// 本番終了、リザルト画面の処理
 function processResult() {
   gameActive = false;
   
-  // ハイスコア判定
-  const key = `谱読みMaster_v1_highscore_${currentClef}`;
+  const key = `谱読みMaster_v2_highscore_${currentClef}`;
   const oldHigh = parseInt(localStorage.getItem(key) || 0, 10);
   let isNewHigh = false;
   if (score > oldHigh) {
@@ -251,255 +245,13 @@ function processResult() {
     isNewHigh = true;
   }
   
-  // 画面セット
   document.getElementById('result-clef-text').innerText = currentClef === 'treble' ? "【 ト音記号コース 】" : "【 ヘ音記号コース 】";
   document.getElementById('result-score').innerText = score;
   document.getElementById('result-highscore-notice').style.display = isNewHigh ? "block" : "none";
   
-  // ランクバッジとコメントの生成
   let rank = "F";
   let color = "#888888";
   let comment = "まずはじっくり練習モードで覚えよう！";
   
   if (score >= 400) { rank = "SSS"; color = "#ff0055"; comment = "神域の譜読み能力！向かうところ敵なしです！"; }
-  else if (score >= 300) { rank = "SS"; color = "#ffaa00"; comment = "達人級！プロの演奏家クラスのスピードです！"; }
-  else if (score >= 230) { rank = "S"; color = "#ffff00"; comment = "素晴らしい！圧倒的な譜読み速度です！"; }
-  else if (score >= 170) { rank = "A"; color = "#00ffcc"; comment = "合格点！すらすら読めるようになってきましたね！"; }
-  else if (score >= 110) { rank = "B"; color = "#00ff00"; comment = "いい調子！その調子でスコアを伸ばしましょう！"; }
-  else if (score >= 60)  { rank = "C"; color = "#2288ff"; comment = "少しずつ迷わずに読める音が増えてきました！"; }
-  else if (score >= 20)  { rank = "D"; color = "#aa55ff"; comment = "一歩一歩前進しています！何度も挑戦だ！"; }
-  
-  const badge = document.getElementById('result-badge');
-  badge.innerText = rank;
-  badge.style.color = color;
-  document.getElementById('result-comment').innerText = comment;
-  
-  showScreen('screen-result');
-}
-
-function endGame() {
-  gameActive = false;
-  showHomeScreen();
-}
-
-// 平均律における中央C（ド）からのステップ数に応じた周波数を計算
-function calculateFrequency(baseStep, octShift) {
-  const centerC = 261.63;
-  const diatonicToSemitones = [0, 2, 4, 5, 7, 9, 11];
-  let totalSemitones = diatonicToSemitones[baseStep] + (octShift * 12);
-  return centerC * Math.pow(2, totalSemitones / 12);
-}
-
-function generateQuestion() {
-  const base = NOTES_DATA[Math.floor(Math.random() * NOTES_DATA.length)];
-  let oct = 0;
-  let targetY = 0;
-  let finalFreq = 0;
-
-  if (currentClef === 'treble') {
-    oct = Math.random() > 0.5 ? 0 : 1;
-    targetY = base.trebleY - (oct * 70); 
-    finalFreq = calculateFrequency(base.step, oct);
-  } else {
-    oct = Math.random() > 0.5 ? -1 : 0;
-    targetY = base.bassY - (oct * 70);
-    finalFreq = calculateFrequency(base.step, oct - 1);
-  }
-
-  correctNote = {
-    name: base.name,
-    freq: finalFreq,
-    y: targetY
-  };
-  
-  createChoiceButtons();
-}
-
-function createChoiceButtons() {
-  const div = document.getElementById("choices");
-  div.innerHTML = "";
-  ["ド","レ","ミ","ファ","ソ","ラ","シ"].forEach(name => {
-    const btn = document.createElement("button");
-    btn.innerText = name;
-    btn.style.padding = "20px 30px";  
-    btn.style.fontSize = "22px";      
-    btn.onclick = () => checkAnswer(name);
-    div.appendChild(btn);
-  });
-}
-
-function drawStaff() {
-  const canvas = document.getElementById("staff");
-  if (!canvas) return;
-  const ctx = canvas.getContext("2d");
-  ctx.clearRect(0,0,600,220);
-  ctx.strokeStyle="#333";
-  ctx.lineWidth = 2;
-  
-  for(let i=0; i<5; i++){
-    ctx.beginPath(); ctx.moveTo(50, 60+i*20); ctx.lineTo(550, 60+i*20); ctx.stroke();
-  }
-  
-  ctx.font="80px serif";
-  ctx.fillStyle="black";
-  ctx.fillText(currentClef === 'treble' ? "𝄞" : "𝄢", 60, currentClef === 'treble' ? 135 : 115);
-  
-  ctx.beginPath();
-  ctx.fillStyle = "black";
-  ctx.ellipse(300, correctNote.y, 10, 7, 0, 0, Math.PI*2);
-  ctx.fill();
-
-  ctx.strokeStyle = "black";
-  for(let ly = 160; ly <= correctNote.y; ly += 20) {
-    ctx.beginPath(); ctx.moveTo(280, ly); ctx.lineTo(320, ly); ctx.stroke();
-  }
-  for(let ly = 40; ly >= correctNote.y; ly -= 20) {
-    ctx.beginPath(); ctx.moveTo(280, ly); ctx.lineTo(320, ly); ctx.stroke();
-  }
-
-  // ジュース（テキストポップアップアニメーション）の描画処理
-  for (let i = juiceEffects.length - 1; i >= 0; i--) {
-    let fx = juiceEffects[i];
-    fx.y -= fx.vy;
-    fx.vy *= 0.92; // 減速
-    fx.alpha -= 0.02;
-    
-    if (fx.alpha <= 0) {
-      juiceEffects.splice(i, 1);
-      continue;
-    }
-    
-    ctx.font = `italic bold ${fx.size}px sans-serif`;
-    ctx.fillStyle = fx.color;
-    ctx.globalAlpha = fx.alpha;
-    ctx.strokeStyle = "black";
-    ctx.lineWidth = 4;
-    ctx.strokeText(fx.text, fx.x, fx.y);
-    ctx.fillText(fx.text, fx.x, fx.y);
-  }
-  ctx.globalAlpha = 1.0; // アルファをリセット
-}
-
-function checkAnswer(name) {
-  const multDisp = document.getElementById('mult-display');
-  
-  if (name === correctNote.name) {
-    // コンボに応じたスコア増加（基本10点、コンボ数*2が加算、最大50点）
-    let addScore = 10 + (comboCount * 2);
-    if (addScore > 50) addScore = 50;
-    
-    // 高コンボ時は画面フラッシュをより派手な緑に
-    let flashClass = 'correct-flash-low';
-    if (comboCount >= 10) flashClass = 'correct-flash-high';
-    else if (comboCount >= 5) flashClass = 'correct-flash-mid';
-    
-    triggerFlash(flashClass);
-    playTone(correctNote.freq);
-    
-    if (gameMode === 'exam') {
-      score += addScore; 
-      comboCount++; 
-      
-      // キャンバス上に派手なジュースポップアップを生成
-      addJuiceText(`+${addScore}!`, 300, correctNote.y - 15, "#ffcc00", 32);
-      if (comboCount >= 2) {
-        addJuiceText(`${comboCount} COMBO!`, 300, correctNote.y + 25, "#00ffcc", 22);
-      }
-      
-      if (comboCount === 3) {
-        timeLeft += 10.0;
-        addJuiceText("+10秒!!", 120, 40, "#ff4444", 26);
-        comboCount = 0; 
-      }
-      
-      let nextAddScore = 10 + (comboCount * 2);
-      if (nextAddScore > 50) nextAddScore = 50;
-      multDisp.innerText = `獲得点数: +${nextAddScore}`;
-      if(comboCount > 0) multDisp.innerText += ` (コンボボーナス中!)`;
-      
-      document.getElementById('score-display').innerText = `スコア: ${score}`;
-      document.getElementById('combo-display').innerText = `コンボ: ${comboCount}`;
-    } else {
-      // 練習モード用の文字演出
-      addJuiceText("正解!", 300, correctNote.y - 15, "#22cc22", 28);
-    }
-    generateQuestion();
-
-  } else {
-    triggerFlash('wrong-flash');
-    playWrongSound();
-    
-    if (gameMode === 'exam') {
-      score -= 5; 
-      if (score < 0) score = 0; 
-      comboCount = 0; 
-      
-      addJuiceText("-5", 300, correctNote.y - 15, "#ff4444", 28);
-      multDisp.innerText = `獲得点数: +10`;
-      
-      document.getElementById('score-display').innerText = `スコア: ${score}`;
-      document.getElementById('combo-display').innerText = `コンボ: ${comboCount}`;
-    }
-  }
-}
-
-// ジュース用のエフェクト配列にテキストを追加
-function addJuiceText(text, x, y, color, size) {
-  juiceEffects.push({
-    text: text,
-    x: x,
-    y: y,
-    vy: 5, // 上に飛び跳ねる速度
-    color: color,
-    size: size,
-    alpha: 1.0
-  });
-}
-
-function triggerFlash(className) {
-  document.body.classList.remove('correct-flash-low', 'correct-flash-mid', 'correct-flash-high', 'wrong-flash');
-  void document.body.offsetWidth; 
-  document.body.classList.add(className);
-  setTimeout(() => {
-    document.body.classList.remove(className);
-  }, 120);
-}
-
-function playTone(freq){
-  const osc = audioCtx.createOscillator();
-  const gain = audioCtx.createGain();
-  osc.type = "sine";
-  osc.frequency.value = freq;
-  osc.connect(gain); gain.connect(audioCtx.destination);
-  osc.start();
-  gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.5);
-  osc.stop(audioCtx.currentTime + 0.5);
-}
-
-function playWrongSound() {
-  const now = audioCtx.currentTime;
-  const osc1 = audioCtx.createOscillator();
-  const osc2 = audioCtx.createOscillator();
-  const gain = audioCtx.createGain();
-  
-  osc1.type = "sawtooth"; 
-  osc2.type = "sawtooth";
-  
-  osc1.frequency.setValueAtTime(130.81, now); 
-  osc2.frequency.setValueAtTime(138.59, now); 
-  
-  osc1.connect(gain); osc2.connect(gain);
-  gain.connect(audioCtx.destination);
-  
-  gain.gain.setValueAtTime(0.15, now);
-  gain.gain.linearRampToValueAtTime(0.001, now + 0.3);
-  
-  osc1.start(now); osc1.stop(now + 0.3);
-  osc2.start(now); osc2.stop(now + 0.3);
-}
-
-// 初回ハイスコア読み込み
-updateHighscoreDisplay();
-</script>
-</body>
-</html>
+  else
