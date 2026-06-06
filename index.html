@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>譜読みマスター - 超中毒性Ver (画面制御刷新版)</title>
+<title>譜読みマスター - 超中毒性Ver (画面遷移最優先版)</title>
 <style>
   body { 
     background:#101018; color:white; text-align:center; font-family:sans-serif; margin:0; padding:10px;
@@ -28,7 +28,6 @@
   button:hover { background: #6666ff; transform: translateY(-2px); box-shadow: 0 6px 0 #2222aa; }
   button:active { transform: translateY(2px); box-shadow: 0 0 0 #2222aa; }
   
-  /* 画面切り替えのクラスを厳格化 */
   .screen { display: none !important; }
   .screen.active { display: block !important; }
 
@@ -130,7 +129,6 @@ let animationFrameId = null;
 
 let juiceEffects = [];
 
-// 完全手動固定マッピング（ヘ音記号のズレ対策版を維持）
 const TREBLE_MAP = [
   { y: 160, name: "ド", freq: 261.63 }, 
   { y: 150, name: "レ", freq: 293.66 }, 
@@ -166,15 +164,18 @@ const BASS_MAP = [
 ];
 
 function initAudio() { 
-  if (!audioCtx) {
-    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-  }
-  if (audioCtx && audioCtx.state === 'suspended') {
-    audioCtx.resume();
+  try {
+    if (!audioCtx) {
+      audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    }
+    if (audioCtx && audioCtx.state === 'suspended') {
+      audioCtx.resume();
+    }
+  } catch(e) {
+    console.log("Audio init skipped context blockade");
   }
 }
 
-// 画面切り替えロジックを完全に安全な形に修正
 function showScreen(screenId) {
   const screens = ['screen-home', 'screen-game', 'screen-result'];
   screens.forEach(id => {
@@ -197,7 +198,7 @@ function showHomeScreen() {
 }
 
 function updateHighscoreDisplay() {
-  const key = `谱読みMaster_v6_highscore_${currentClef}`;
+  const key = `谱読みMaster_v7_highscore_${currentClef}`;
   const highscore = localStorage.getItem(key) || 0;
   const scoreEl = document.getElementById('home-highscore');
   if (scoreEl) {
@@ -230,8 +231,13 @@ function stopGameLoop() {
 }
 
 function startGameMode(mode) {
+  // 1. 何よりも最優先で画面を切り替える（ブラウザのブロックを回避）
+  showScreen('screen-game');
+  
+  // 2. 音の準備は画面切り替えの後に安全に行う
+  setTimeout(() => { initAudio(); }, 10);
+
   stopGameLoop(); 
-  initAudio();
   gameMode = mode;
   juiceEffects = [];
   
@@ -258,7 +264,6 @@ function startGameMode(mode) {
     if(multDisp) multDisp.style.display = "none";
   }
   
-  showScreen('screen-game');
   generateQuestion();
   
   lastTimestamp = performance.now();
@@ -292,7 +297,7 @@ function processResult() {
   stopGameLoop(); 
   gameActive = false;
   
-  const key = `谱読みMaster_v6_highscore_${currentClef}`;
+  const key = `谱読みMaster_v7_highscore_${currentClef}`;
   const oldHigh = parseInt(localStorage.getItem(key) || 0, 10);
   let isNewHigh = false;
   if (score > oldHigh) {
@@ -548,7 +553,6 @@ function playWrongSound() {
   }
 }
 
-// ページ読み込み完了時に確実に実行
 window.addEventListener('DOMContentLoaded', () => {
   updateHighscoreDisplay();
 });
