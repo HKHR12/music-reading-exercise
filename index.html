@@ -4,7 +4,6 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>譜読みマスター - 完全動作保証Ver</title>
-
 <style>
   body { 
     background:#101018; color:white; text-align:center; font-family:sans-serif; margin:0; padding:10px;
@@ -22,7 +21,7 @@
     display: inline-block;
   }
   button:active { transform: translateY(2px); box-shadow: 0 0 0 #2222aa; }
-
+  
   .screen { display: none !important; }
   .screen.active { display: block !important; }
 
@@ -31,7 +30,9 @@
   .choice-container { display: flex; justify-content: center; flex-wrap: wrap; max-width: 600px; margin: 0 auto; gap: 5px; }
   .mode-title { font-size: 1.8em; font-weight: bold; margin-bottom: 5px; color: #ffaa00; }
   .mode-subtitle { font-size: 1.1em; font-weight: bold; margin-bottom: 15px; color: #aaa; }
+  
   .menu-btn { font-size: 20px; padding: 15px 30px; margin: 8px; width: 85%; max-width: 320px; }
+  
   .sub-panel { background: #252535; padding: 12px; border-radius: 8px; margin: 10px 0; }
   .highscore-text { font-size: 1.1em; color: #ffcc00; font-weight: bold; margin-top: 5px; text-shadow: 0 0 8px rgba(255,204,0,0.4); }
 
@@ -39,258 +40,510 @@
   body.correct-flash-mid { background-color: #114411; }
   body.correct-flash-high { background-color: #1b661b; }
   body.wrong-flash { background-color: #551111; }
-
+  
   .badge { font-size: 4em; font-weight: bold; margin: 15px 0; text-shadow: 0 0 20px currentColor; display: inline-block; }
 </style>
 </head>
-
 <body>
 
-<h1>譜読み練習サイト</h1>
+<h1>🎶 譜読み練習サイト 🎶</h1>
 
-<!-- screens -->
 <div id="screen-home" class="screen active">
   <div class="panel">
     <h2>メインメニュー</h2>
-
+    <p style="font-size: 1.1em; color: #ccc;">練習したい設定を選んでください。</p>
+    
     <div class="sub-panel">
-      <div>音部記号</div>
-      <button id="btn-clef-treble">ト音記号</button>
-      <button id="btn-clef-bass">ヘ音記号</button>
+      <div style="font-size: 1.1em; font-weight: bold; margin-bottom: 8px;">1. 音部記号の選択</div>
+      <button id="btn-clef-treble" onclick="selectClef('treble')" style="background: #ff55bb; box-shadow: 0 4px 0 #aa3377;">ト音記号</button>
+      <button id="btn-clef-bass" onclick="selectClef('bass')" style="background: #555; box-shadow: 0 4px 0 #333;">ヘ音記号</button>
     </div>
 
     <div class="sub-panel">
-      <div>難易度</div>
-      <button id="btn-diff-easy">イージー</button>
-      <button id="btn-diff-normal">ノーマル</button>
-      <button id="btn-diff-hard">ハード</button>
+      <div style="font-size: 1.1em; font-weight: bold; margin-bottom: 8px;">2. 難易度の選択 (本番モード用)</div>
+      <button id="btn-diff-easy" onclick="selectDifficulty('easy')" style="background: #22cc22; box-shadow: 0 4px 0 #117711;">イージー (3連鎖毎)</button>
+      <button id="btn-diff-normal" onclick="selectDifficulty('normal')" style="background: #555; box-shadow: 0 4px 0 #333;">ノーマル (5連鎖毎)</button>
+      <button id="btn-diff-hard" onclick="selectDifficulty('hard')" style="background: #555; box-shadow: 0 4px 0 #333;">ハード (10連鎖毎)</button>
     </div>
 
     <div id="home-highscore" class="highscore-text">🏆 ハイスコア: 0</div>
 
-    <button id="start-exam-btn">本番開始</button>
-    <button id="start-practice-btn">練習開始</button>
+    <hr style="border-color: #333; margin: 20px 0;">
+
+    <div style="display: flex; flex-direction: column; align-items: center;">
+      <button id="start-exam-btn" onclick="startGameMode('exam')" class="menu-btn" style="background: #ff4444; box-shadow: 0 4px 0 #aa2222;">🔥 本番開始 (1分半)</button>
+      <button id="start-practice-btn" onclick="startGameMode('practice')" class="menu-btn" style="background: #666; box-shadow: 0 4px 0 #444;">✏️ 練習開始 (制限なし)</button>
+    </div>
   </div>
 </div>
 
 <div id="screen-game" class="screen">
   <div class="panel">
-    <div id="game-mode-text" class="mode-title"></div>
-    <div id="game-diff-text" class="mode-subtitle"></div>
+    <div id="game-mode-text" class="mode-title">モード</div>
+    <div id="game-diff-text" class="mode-subtitle">難易度</div>
     <div class="stats-grid">
-      <div id="timer-display"></div>
-      <div id="score-display"></div>
-      <div id="combo-display"></div>
+      <div id="timer-display">残り時間: --</div>
+      <div id="score-display">スコア: 0</div>
+      <div id="combo-display" style="color: #00ffcc;">コンボ: 0</div>
     </div>
   </div>
 
   <canvas id="staff" width="600" height="220"></canvas>
-
+  
   <div class="panel">
-    <div id="mult-display"></div>
-    <div id="choices" class="choice-container"></div>
+    <div id="mult-display" style="font-size: 1.2em; font-weight: bold; color: #ffcc00; margin-bottom: 5px; height: 24px;">獲得点数: +10</div>
+    <div class="choice-container" id="choices"></div>
   </div>
-
-  <button id="back-btn">戻る</button>
+  
+  <button onclick="endGame()" style="background:#555; box-shadow:0 4px 0 #333; font-size: 18px; padding: 12px 24px; margin-top: 15px;">メニューに戻る</button>
 </div>
 
 <div id="screen-result" class="screen">
   <div class="panel">
-    <h2>結果</h2>
-    <div id="result-score"></div>
-    <div id="result-badge" class="badge"></div>
-    <div id="result-comment"></div>
-    <button id="retry-btn">もう一度</button>
-    <button id="home-btn">ホーム</button>
+    <h2 style="color: #ffaa00; font-size: 2em; margin-bottom: 5px;">TIME UP!</h2>
+    <p id="result-clef-text" style="font-size: 1.2em; color: #aaa; margin: 5px 0;"></p>
+    
+    <div style="font-size: 1.5em; margin-top: 20px;">最終スコア</div>
+    <div id="result-score" style="font-size: 3.5em; font-weight: bold; color: #fff;">0</div>
+    <div id="result-highscore-notice" style="color: #ffcc00; font-weight: bold; display: none; margin-bottom: 10px;">🏆 ハイスコア更新！ 🏆</div>
+    
+    <div>評価ランク</div>
+    <div id="result-badge" class="badge">A</div>
+    <div id="result-comment" style="font-size: 1.2em; font-weight: bold; color: #aaa; margin-bottom: 25px;">素晴らしい演奏でした！</div>
+    
+    <div style="display: flex; flex-direction: column; align-items: center; gap: 10px;">
+      <button onclick="startGameMode('exam')" style="background: #ff4444; box-shadow: 0 4px 0 #aa2222; width: 85%; max-width: 320px; font-size: 22px; padding: 15px;">🔄 もう一度挑戦する</button>
+      <button onclick="showHomeScreen()" style="background: #555; box-shadow: 0 4px 0 #333; width: 85%; max-width: 320px; font-size: 18px; padding: 12px;">🏠 メインメニューへ</button>
+    </div>
   </div>
 </div>
 
 <script>
-/* =========================
-   STATE
-========================= */
-const GameState = {
-  clef: 'treble',
-  difficulty: 'easy',
-  mode: 'exam',
-  active: false,
+let currentClef = 'treble'; 
+let currentDifficulty = 'easy'; 
+let gameMode = 'exam';      
+let gameActive = false;
+let correctNote = null;
 
-  score: 0,
-  combo: 0,
-  time: 0,
+let score = 0;
+let timeLeft = 0;
+let lastTimestamp = 0;
+let comboCount = 0; 
+let animationFrameId = null; 
 
-  correct: null,
-  raf: null,
-  effects: []
-};
+let juiceEffects = [];
 
-/* =========================
-   DOM CACHE
-========================= */
-const UI = {
-  home: document.getElementById('screen-home'),
-  game: document.getElementById('screen-game'),
-  result: document.getElementById('screen-result'),
+const TREBLE_MAP = [
+  { y: 160, name: "ド" }, 
+  { y: 150, name: "レ" }, 
+  { y: 140, name: "ミ" }, 
+  { y: 130, name: "ファ" }, 
+  { y: 120, name: "ソ" }, 
+  { y: 110, name: "ラ" }, 
+  { y: 100, name: "シ" }, 
+  { y: 90,  name: "ド" }, 
+  { y: 80,  name: "レ" }, 
+  { y: 70,  name: "ミ" }, 
+  { y: 60,  name: "ファ" }, 
+  { y: 50,  name: "ソ" }, 
+  { y: 40,  name: "ラ" }, 
+  { y: 30,  name: "シ" }  
+];
 
-  canvas: document.getElementById('staff'),
-  ctx: document.getElementById('staff').getContext('2d'),
+const BASS_MAP = [
+  { y: 160, name: "ミ" }, 
+  { y: 150, name: "ファ" }, 
+  { y: 140, name: "ソ" }, 
+  { y: 130, name: "ラ" }, 
+  { y: 120, name: "シ" }, 
+  { y: 110, name: "ド" }, 
+  { y: 100, name: "レ" }, 
+  { y: 90,  name: "ミ" }, 
+  { y: 80,  name: "ファ" }, 
+  { y: 70,  name: "ソ" }, 
+  { y: 60,  name: "ラ" }, 
+  { y: 50,  name: "シ" }, 
+  { y: 40,  name: "ド" }, 
+  { y: 30,  name: "レ" }  
+];
 
-  score: document.getElementById('score-display'),
-  combo: document.getElementById('combo-display'),
-  timer: document.getElementById('timer-display'),
-  mult: document.getElementById('mult-display'),
-
-  choices: document.getElementById('choices')
-};
-
-/* =========================
-   DATA
-========================= */
-const MAP = {
-  treble: [
-    "ド","レ","ミ","ファ","ソ","ラ","シ","ド","レ","ミ","ファ","ソ","ラ","シ"
-  ],
-  bass: [
-    "ミ","ファ","ソ","ラ","シ","ド","レ","ミ","ファ","ソ","ラ","シ","ド","レ"
-  ]
-};
-
-/* =========================
-   SCREEN
-========================= */
-function showScreen(name){
-  [UI.home, UI.game, UI.result].forEach(s => s.classList.remove('active'));
-  UI[name].classList.add('active');
-  GameState.active = (name === 'game');
+function showScreen(screenId) {
+  const screens = ['screen-home', 'screen-game', 'screen-result'];
+  screens.forEach(id => {
+    const el = document.getElementById(id);
+    if (el) {
+      if (id === screenId) {
+        el.classList.add('active');
+      } else {
+        el.classList.remove('active');
+      }
+    }
+  });
+  gameActive = (screenId === 'screen-game');
 }
 
-/* =========================
-   GAME CONTROL
-========================= */
-function start(mode){
-  GameState.mode = mode;
-  GameState.score = 0;
-  GameState.combo = 0;
-  GameState.time = (mode === 'exam') ? 90 : Infinity;
-
-  showScreen('game');
-  nextQuestion();
-
-  GameState.raf = requestAnimationFrame(loop);
+function showHomeScreen() {
+  stopGameLoop();
+  updateHighscoreDisplay();
+  showScreen('screen-home');
 }
 
-function stop(){
-  cancelAnimationFrame(GameState.raf);
-  GameState.active = false;
-  showScreen('home');
+function getHighscoreKey() {
+  return `谱読みMaster_v8_highscore_${currentClef}_${currentDifficulty}`;
 }
 
-/* =========================
-   LOOP
-========================= */
-let last = performance.now();
+function updateHighscoreDisplay() {
+  const key = getHighscoreKey();
+  const highscore = localStorage.getItem(key) || 0;
+  const scoreEl = document.getElementById('home-highscore');
+  if (scoreEl) {
+    let diffName = "イージー";
+    if (currentDifficulty === 'normal') diffName = "ノーマル";
+    if (currentDifficulty === 'hard') diffName = "ハード";
+    scoreEl.innerText = `🏆 ハイスコア [${diffName}]: ${highscore}`;
+  }
+}
 
-function loop(t){
-  if(!GameState.active) return;
+function selectClef(clef) {
+  currentClef = clef;
+  const trebleBtn = document.getElementById('btn-clef-treble');
+  const bassBtn = document.getElementById('btn-clef-bass');
+  
+  if (trebleBtn && bassBtn) {
+    if (clef === 'treble') {
+      trebleBtn.style.background = '#ff55bb'; trebleBtn.style.boxShadow = '0 4px 0 #aa3377';
+      bassBtn.style.background = '#555'; bassBtn.style.boxShadow = '0 4px 0 #333';
+    } else {
+      trebleBtn.style.background = '#555'; trebleBtn.style.boxShadow = '0 4px 0 #333';
+      bassBtn.style.background = '#55bbff'; bassBtn.style.boxShadow = '0 4px 0 #3377aa';
+    }
+  }
+  updateHighscoreDisplay();
+}
 
-  const dt = (t - last) / 1000;
-  last = t;
+function selectDifficulty(diff) {
+  currentDifficulty = diff;
+  const easyBtn = document.getElementById('btn-diff-easy');
+  const normalBtn = document.getElementById('btn-diff-normal');
+  const hardBtn = document.getElementById('btn-diff-hard');
+  
+  if (easyBtn && normalBtn && hardBtn) {
+    easyBtn.style.background = '#555'; easyBtn.style.boxShadow = '0 4px 0 #333';
+    normalBtn.style.background = '#555'; normalBtn.style.boxShadow = '0 4px 0 #333';
+    hardBtn.style.background = '#555'; hardBtn.style.boxShadow = '0 4px 0 #333';
+    
+    if (diff === 'easy') { easyBtn.style.background = '#22cc22'; easyBtn.style.boxShadow = '0 4px 0 #117711'; }
+    if (diff === 'normal') { normalBtn.style.background = '#ffaa00'; normalBtn.style.boxShadow = '0 4px 0 #aa7700'; }
+    if (diff === 'hard') { hardBtn.style.background = '#ff4444'; hardBtn.style.boxShadow = '0 4px 0 #aa2222'; }
+  }
+  updateHighscoreDisplay();
+}
 
-  if(GameState.mode === 'exam'){
-    GameState.time -= dt;
-    if(GameState.time <= 0){
-      finish();
+function stopGameLoop() {
+  if (animationFrameId) {
+    cancelAnimationFrame(animationFrameId);
+    animationFrameId = null;
+  }
+}
+
+function startGameMode(mode) {
+  showScreen('screen-game');
+  stopGameLoop(); 
+  gameMode = mode;
+  juiceEffects = [];
+  
+  const modeText = document.getElementById('game-mode-text');
+  const diffText = document.getElementById('game-diff-text');
+  const timerDisp = document.getElementById('timer-display');
+  const scoreDisp = document.getElementById('score-display');
+  const comboDisp = document.getElementById('combo-display');
+  const multDisp = document.getElementById('mult-display');
+  
+  if (gameMode === 'exam') {
+    let diffStr = "🟢 イージーモード (3コンボ毎に+5秒)";
+    if(currentDifficulty === 'normal') diffStr = "🟡 ノーマルモード (5コンボ毎に+5秒)";
+    if(currentDifficulty === 'hard') diffStr = "🔴 ハードモード (10コンボ毎に+5秒)";
+    
+    if(modeText) { modeText.innerText = "🔥 本番モード"; modeText.style.color = "#ff4444"; }
+    if(diffText) { diffText.innerText = diffStr; diffText.style.display = "block"; }
+    
+    score = 0;
+    comboCount = 0;
+    timeLeft = 90.0; 
+    if(timerDisp) timerDisp.innerText = `残り時間: ${timeLeft.toFixed(1)}s`;
+    if(scoreDisp) { scoreDisp.innerText = `スコア: ${score}`; scoreDisp.style.display = "block"; }
+    if(comboDisp) { comboDisp.innerText = `コンボ: ${comboCount}`; comboDisp.style.display = "block"; }
+    if(multDisp) { multDisp.innerText = `獲得点数: +10`; multDisp.style.display = "block"; }
+  } else {
+    if(modeText) { modeText.innerText = "✏️ 練習モード"; modeText.style.color = "#22cc22"; }
+    if(diffText) { diffText.style.display = "none"; }
+    if(timerDisp) timerDisp.innerText = "残り時間: ∞";
+    if(scoreDisp) scoreDisp.style.display = "none";
+    if(comboDisp) comboDisp.style.display = "none";
+    if(multDisp) multDisp.style.display = "none";
+  }
+  
+  generateQuestion();
+  
+  lastTimestamp = performance.now();
+  animationFrameId = requestAnimationFrame(gameLoop);
+}
+
+function gameLoop(timestamp) {
+  if (!gameActive) return;
+  
+  const dt = timestamp - lastTimestamp;
+  lastTimestamp = timestamp;
+
+  if (gameMode === 'exam') {
+    timeLeft -= dt / 1000;
+    if (timeLeft <= 0) {
+      timeLeft = 0;
+      const timerDisp = document.getElementById('timer-display');
+      if(timerDisp) timerDisp.innerText = `残り時間: 0.0s`;
+      processResult();
       return;
     }
-    UI.timer.textContent = `残り ${GameState.time.toFixed(1)}s`;
+    const timerDisp = document.getElementById('timer-display');
+    if(timerDisp) timerDisp.innerText = `残り時間: ${timeLeft.toFixed(1)}s`;
   }
-
-  draw();
-  GameState.raf = requestAnimationFrame(loop);
+  
+  drawStaff();
+  animationFrameId = requestAnimationFrame(gameLoop);
 }
 
-/* =========================
-   LOGIC
-========================= */
-function nextQuestion(){
-  const list = MAP[GameState.clef];
-  GameState.correct = list[Math.floor(Math.random() * list.length)];
-
-  renderChoices();
-}
-
-function check(ans){
-  if(ans === GameState.correct){
-    GameState.score += 10 + GameState.combo * 2;
-    GameState.combo++;
-
-    UI.score.textContent = `スコア ${GameState.score}`;
-    UI.combo.textContent = `コンボ ${GameState.combo}`;
-
-    nextQuestion();
-  }else{
-    GameState.combo = 0;
+function processResult() {
+  stopGameLoop(); 
+  gameActive = false;
+  
+  const key = getHighscoreKey();
+  const oldHigh = parseInt(localStorage.getItem(key) || 0, 10);
+  let isNewHigh = false;
+  if (score > oldHigh) {
+    localStorage.setItem(key, score);
+    isNewHigh = true;
   }
+  
+  const clefTextEl = document.getElementById('result-clef-text');
+  const scoreEl = document.getElementById('result-score');
+  const noticeEl = document.getElementById('result-highscore-notice');
+  
+  let diffName = "イージー";
+  if (currentDifficulty === 'normal') diffName = "ノーマル";
+  if (currentDifficulty === 'hard') diffName = "ハード";
+  
+  if(clefTextEl) clefTextEl.innerText = (currentClef === 'treble' ? "【 ト音記号 " : "【 ヘ音記号 ") + diffName + "コース 】";
+  if(scoreEl) scoreEl.innerText = score;
+  if(noticeEl) noticeEl.style.display = isNewHigh ? "block" : "none";
+  
+  let rank = "F";
+  let color = "#888888";
+  let comment = "まずはじっくり練習モードで覚えよう！";
+  
+  if (score >= 400) { rank = "SSS"; color = "#ff0055"; comment = "神域の譜読み能力！向かうところ敵なしです！"; }
+  else if (score >= 300) { rank = "SS"; color = "#ffaa00"; comment = "達人級！プロの演奏家クラスのスピードです！"; }
+  else if (score >= 230) { rank = "S"; color = "#ffff00"; comment = "素晴らしい！圧倒的な譜読み速度です！"; }
+  else if (score >= 170) { rank = "A"; color = "#00ffcc"; comment = "合格点！すらすら読めるようになってきましたね！"; }
+  else if (score >= 110) { rank = "B"; color = "#00ff00"; comment = "いい調子！その調子でスコアを伸ばしましょう！"; }
+  else if (score >= 60)  { rank = "C"; color = "#2288ff"; comment = "少しずつ迷わずに読める音が増えてきました！"; }
+  else if (score >= 20)  { rank = "D"; color = "#aa55ff"; comment = "一歩一歩前進しています！何度も挑戦だ！"; }
+  
+  const badge = document.getElementById('result-badge');
+  const commentEl = document.getElementById('result-comment');
+  if(badge) { badge.innerText = rank; badge.style.color = color; }
+  if(commentEl) commentEl.innerText = comment;
+  
+  showScreen('screen-result');
 }
 
-/* =========================
-   UI
-========================= */
-function renderChoices(){
-  UI.choices.innerHTML = "";
-  MAP.treble.forEach(n=>{
-    const b = document.createElement('button');
-    b.textContent = n;
-    b.onclick = ()=>check(n);
-    UI.choices.appendChild(b);
+function endGame() {
+  gameActive = false;
+  showHomeScreen();
+}
+
+function generateQuestion() {
+  const map = (currentClef === 'treble') ? TREBLE_MAP : BASS_MAP;
+  const targetData = map[Math.floor(Math.random() * map.length)];
+
+  correctNote = {
+    name: targetData.name,
+    y: targetData.y
+  };
+  
+  createChoiceButtons();
+}
+
+function createChoiceButtons() {
+  const div = document.getElementById("choices");
+  if (!div) return;
+  div.innerHTML = "";
+  ["ド","レ","ミ","ファ","ソ","ラ","シ"].forEach(name => {
+    const btn = document.createElement("button");
+    btn.innerText = name;
+    btn.style.padding = "18px 26px";  
+    btn.style.fontSize = "22px";      
+    btn.onclick = (e) => {
+      e.preventDefault();
+      checkAnswer(name);
+    };
+    div.appendChild(btn);
   });
 }
 
-function draw(){
-  const ctx = UI.ctx;
+function drawStaff() {
+  const canvas = document.getElementById("staff");
+  if (!canvas) return;
+  const ctx = canvas.getContext("2d");
   ctx.clearRect(0,0,600,220);
-
-  for(let i=0;i<5;i++){
+  ctx.strokeStyle="#333";
+  ctx.lineWidth = 2;
+  
+  for(let i=0; i<5; i++){
+    ctx.beginPath(); ctx.moveTo(50, 60+i*20); ctx.lineTo(550, 60+i*20); ctx.stroke();
+  }
+  
+  ctx.font="80px serif";
+  ctx.fillStyle="black";
+  ctx.fillText(currentClef === 'treble' ? "𝄞" : "𝄢", 60, currentClef === 'treble' ? 135 : 120);
+  
+  if (correctNote) {
     ctx.beginPath();
-    ctx.moveTo(50,60+i*20);
-    ctx.lineTo(550,60+i*20);
-    ctx.stroke();
+    ctx.fillStyle = "black";
+    ctx.ellipse(300, correctNote.y, 10, 7, 0, 0, Math.PI*2);
+    ctx.fill();
+
+    ctx.strokeStyle = "black";
+    ctx.lineWidth = 2;
+    for(let ly = 160; ly <= correctNote.y; ly += 20) {
+      ctx.beginPath(); ctx.moveTo(280, ly); ctx.lineTo(320, ly); ctx.stroke();
+    }
+    for(let ly = 40; ly >= correctNote.y; ly -= 20) {
+      ctx.beginPath(); ctx.moveTo(280, ly); ctx.lineTo(320, ly); ctx.stroke();
+    }
   }
 
-  ctx.font = "80px serif";
-  ctx.fillText(GameState.clef === 'treble' ? "𝄞" : "𝄢", 60, 120);
+  for (let i = juiceEffects.length - 1; i >= 0; i--) {
+    let fx = juiceEffects[i];
+    fx.y -= fx.vy;
+    fx.vy *= 0.92; 
+    fx.alpha -= 0.02;
+    
+    if (fx.alpha <= 0) {
+      juiceEffects.splice(i, 1);
+      continue;
+    }
+    
+    ctx.font = `italic bold ${fx.size}px sans-serif`;
+    ctx.fillStyle = fx.color;
+    ctx.globalAlpha = fx.alpha;
+    ctx.strokeStyle = "black";
+    ctx.lineWidth = 4;
+    ctx.strokeText(fx.text, fx.x, fx.y);
+    ctx.fillText(fx.text, fx.x, fx.y);
+  }
+  ctx.globalAlpha = 1.0; 
 }
 
-/* =========================
-   RESULT
-========================= */
-function finish(){
-  GameState.active = false;
-  cancelAnimationFrame(GameState.raf);
+function checkAnswer(name) {
+  if (!correctNote) return;
+  
+  const multDisp = document.getElementById('mult-display');
+  
+  if (name === correctNote.name) {
+    let addScore = 10 + (comboCount * 2);
+    if (addScore > 50) addScore = 50;
+    
+    let flashClass = 'correct-flash-low';
+    if (comboCount >= 10) flashClass = 'correct-flash-high';
+    else if (comboCount >= 5) flashClass = 'correct-flash-mid';
+    
+    triggerFlash(flashClass);
+    
+    if (gameMode === 'exam') {
+      score += addScore; 
+      comboCount++; 
+      
+      addJuiceText(`+${addScore}!`, 300, correctNote.y - 15, "#ffcc00", 32);
+      if (comboCount >= 2) {
+        addJuiceText(`${comboCount} COMBO!`, 300, correctNote.y + 25, "#00ffcc", 22);
+      }
+      
+      let isBonus = false;
+      if (currentDifficulty === 'easy' && comboCount % 3 === 0) isBonus = true;
+      if (currentDifficulty === 'normal' && comboCount % 5 === 0) isBonus = true;
+      if (currentDifficulty === 'hard' && comboCount % 10 === 0) isBonus = true;
+      
+      if (isBonus) {
+        timeLeft += 5.0;
+        addJuiceText("+5秒!!", 120, 40, "#ff4444", 28);
+      }
+      
+      let nextAddScore = 10 + (comboCount * 2);
+      if (nextAddScore > 50) nextAddScore = 50;
+      if(multDisp) {
+        multDisp.innerText = `獲得点数: +${nextAddScore}`;
+        if(comboCount > 0) multDisp.innerText += ` (コンボボーナス中!)`;
+      }
+      
+      const scoreDisp = document.getElementById('score-display');
+      const comboDisp = document.getElementById('combo-display');
+      if(scoreDisp) scoreDisp.innerText = `スコア: ${score}`;
+      if(comboDisp) comboDisp.innerText = `コンボ: ${comboCount}`;
+    } else {
+      addJuiceText("正解!", 300, correctNote.y - 15, "#22cc22", 28);
+    }
+    generateQuestion();
 
-  UI.resultScore = document.getElementById('result-score');
-  UI.resultBadge = document.getElementById('result-badge');
-  UI.resultComment = document.getElementById('result-comment');
-
-  UI.resultScore.textContent = GameState.score;
-  UI.resultBadge.textContent = "A";
-  UI.resultComment.textContent = "いい感じ";
-
-  showScreen('result');
+  } else {
+    triggerFlash('wrong-flash');
+    
+    if (gameMode === 'exam') {
+      score -= 5; 
+      if (score < 0) score = 0; 
+      comboCount = 0; 
+      
+      addJuiceText("-5", 300, correctNote.y - 15, "#ff4444", 28);
+      if(multDisp) multDisp.innerText = `獲得点数: +10`;
+      
+      const scoreDisp = document.getElementById('score-display');
+      const comboDisp = document.getElementById('combo-display');
+      if(scoreDisp) scoreDisp.innerText = `スコア: ${score}`;
+      if(comboDisp) comboDisp.innerText = `コンボ: ${comboCount}`;
+    }
+  }
 }
 
-/* =========================
-   INIT
-========================= */
-document.getElementById('start-exam-btn').onclick = ()=>start('exam');
-document.getElementById('start-practice-btn').onclick = ()=>start('practice');
-document.getElementById('back-btn').onclick = stop;
-document.getElementById('home-btn').onclick = ()=>showScreen('home');
-document.getElementById('retry-btn').onclick = ()=>start('exam');
+function addJuiceText(text, x, y, color, size) {
+  juiceEffects.push({ text: text, x: x, y: y, vy: 5, color: color, size: size, alpha: 1.0 });
+}
 
-document.getElementById('btn-clef-treble').onclick = ()=>GameState.clef='treble';
-document.getElementById('btn-clef-bass').onclick = ()=>GameState.clef='bass';
+function triggerFlash(className) {
+  document.body.classList.remove('correct-flash-low', 'correct-flash-mid', 'correct-flash-high', 'wrong-flash');
+  void document.body.offsetWidth; 
+  document.body.classList.add(className);
+  setTimeout(() => { document.body.classList.remove(className); }, 120);
+}
+
+function forceInit() {
+  updateHighscoreDisplay();
+  
+  const binder = (id, fn) => {
+    const el = document.getElementById(id);
+    if(el) {
+      el.addEventListener('click', fn, {passive: false});
+      el.addEventListener('touchstart', () => {}, {passive: true});
+    }
+  };
+  
+  binder('btn-clef-treble', () => selectClef('treble'));
+  binder('btn-clef-bass', () => selectClef('bass'));
+  binder('btn-diff-easy', () => selectDifficulty('easy'));
+  binder('btn-diff-normal', () => selectDifficulty('normal'));
+  binder('btn-diff-hard', () => selectDifficulty('hard'));
+}
+
+forceInit();
+window.onload = forceInit;
 </script>
-
 </body>
 </html>
